@@ -1,0 +1,5 @@
+Config.xcconfig
+plans/
+
+.claude/
+.agents/

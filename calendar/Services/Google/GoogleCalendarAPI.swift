@@ -1,0 +1,407 @@
+import Foundation
+import os
+
+/// Thin HTTP client for the Google Calendar API v3.
+///
+/// Stateless and ``Sendable`` — callers supply an access token per request.
+/// Non-2xx responses are surfaced as ``APIError``.
+nonisolated struct GoogleCalendarAPI: Sendable {
+    private static let base = "https://www.googleapis.com/calendar/v3"
+
+    // MARK: - Calendar list
+
+    /// Fetches the authenticated user's calendar list.
+    ///
+    /// Reference: https://developers.google.com/calendar/api/v3/reference/calendarList/list
+    func listCalendars(accessToken: String) async throws -> GCCalendarListResponse {
+        try await request(
+            method: "GET",
+            path: "/users/me/calendarList",
+            accessToken: accessToken
+        )
+    }
+
+    // MARK: - Events (read)
+
+    /// Fetches events on a single calendar within `[timeMin, timeMax]`.
+    ///
+    /// `singleEvents=true` expands recurring series into individual instances;
+    /// `orderBy=startTime` is only valid in that mode.
+    ///
+    /// Reference: https://developers.google.com/calendar/api/v3/reference/events/list
+    func listEvents(
+        calendarId: String,
+        accessToken: String,
+        timeMin: Date,
+        timeMax: Date
+    ) async throws -> GCEventsListResponse {
+        try await request(
+            method: "GET",
+            path: eventsPath(calendarId),
+            query: [
+                URLQueryItem(name: "timeMin", value: Self.iso8601.string(from: timeMin)),
+                URLQueryItem(name: "timeMax", value: Self.iso8601.string(from: timeMax)),
+                URLQueryItem(name: "singleEvents", value: "true"),
+                URLQueryItem(name: "orderBy", value: "startTime"),
+                URLQueryItem(name: "maxResults", value: "250"),
+            ],
+            accessToken: accessToken
+        )
+    }
+
+    /// Fetches a single event by ID.
+    ///
+    /// Reference: https://developers.google.com/calendar/api/v3/reference/events/get
+    func getEvent(
+        calendarId: String,
+        eventId: String,
+        accessToken: String,
+        timeZone: String? = nil
+    ) async throws -> GCEvent {
+        var query: [URLQueryItem] = []
+        if let timeZone {
+            query.append(URLQueryItem(name: "timeZone", value: timeZone))
+        }
+        return try await request(
+            method: "GET",
+            path: eventPath(calendarId, eventId),
+            query: query,
+            accessToken: accessToken
+        )
+    }
+
+    /// Lists the instances of a recurring event.
+    ///
+    /// Reference: https://developers.google.com/calendar/api/v3/reference/events/instances
+    func listEventInstances(
+        calendarId: String,
+        eventId: String,
+        accessToken: String,
+        timeMin: Date? = nil,
+        timeMax: Date? = nil,
+        maxResults: Int? = nil,
+        pageToken: String? = nil,
+        timeZone: String? = nil
+    ) async throws -> GCEventsListResponse {
+        var query: [URLQueryItem] = []
+        if let timeMin {
+            query.append(URLQueryItem(name: "timeMin", value: Self.iso8601.string(from: timeMin)))
+        }
+        if let timeMax {
+            query.append(URLQueryItem(name: "timeMax", value: Self.iso8601.string(from: timeMax)))
+        }
+        if let maxResults {
+            query.append(URLQueryItem(name: "maxResults", value: String(maxResults)))
+        }
+        if let pageToken {
+            query.append(URLQueryItem(name: "pageToken", value: pageToken))
+        }
+        if let timeZone {
+            query.append(URLQueryItem(name: "timeZone", value: timeZone))
+        }
+        return try await request(
+            method: "GET",
+            path: eventPath(calendarId, eventId) + "/instances",
+            query: query,
+            accessToken: accessToken
+        )
+    }
+
+    // MARK: - Events (write)
+
+    /// Creates a new event.
+    ///
+    /// Reference: https://developers.google.com/calendar/api/v3/reference/events/insert
+    func insertEvent(
+        calendarId: String,
+        accessToken: String,
+        body: GCEventWrite,
+        sendUpdates: SendUpdates = .all,
+        conferenceDataVersion: Int? = nil,
+        supportsAttachments: Bool? = nil
+    ) async throws -> GCEvent {
+        try await request(
+            method: "POST",
+            path: eventsPath(calendarId),
+            query: writeQuery(
+                sendUpdates: sendUpdates,
+                conferenceDataVersion: conferenceDataVersion,
+                supportsAttachments: supportsAttachments
+            ),
+            body: body,
+            accessToken: accessToken
+        )
+    }
+
+    /// Replaces an event with a full representation (all writable fields are overwritten).
+    ///
+    /// Reference: https://developers.google.com/calendar/api/v3/reference/events/update
+    func updateEvent(
+        calendarId: String,
+        eventId: String,
+        accessToken: String,
+        body: GCEventWrite,
+        sendUpdates: SendUpdates = .all,
+        conferenceDataVersion: Int? = nil,
+        supportsAttachments: Bool? = nil
+    ) async throws -> GCEvent {
+        try await request(
+            method: "PUT",
+            path: eventPath(calendarId, eventId),
+            query: writeQuery(
+                sendUpdates: sendUpdates,
+                conferenceDataVersion: conferenceDataVersion,
+                supportsAttachments: supportsAttachments
+            ),
+            body: body,
+            accessToken: accessToken
+        )
+    }
+
+    /// Partially updates an event; only the keys present in `body` are changed.
+    ///
+    /// Reference: https://developers.google.com/calendar/api/v3/reference/events/patch
+    func patchEvent(
+        calendarId: String,
+        eventId: String,
+        accessToken: String,
+        body: GCEventWrite,
+        sendUpdates: SendUpdates = .all,
+        conferenceDataVersion: Int? = nil,
+        supportsAttachments: Bool? = nil
+    ) async throws -> GCEvent {
+        try await request(
+            method: "PATCH",
+            path: eventPath(calendarId, eventId),
+            query: writeQuery(
+                sendUpdates: sendUpdates,
+                conferenceDataVersion: conferenceDataVersion,
+                supportsAttachments: supportsAttachments
+            ),
+            body: body,
+            accessToken: accessToken
+        )
+    }
+
+    /// Deletes an event.
+    ///
+    /// Reference: https://developers.google.com/calendar/api/v3/reference/events/delete
+    func deleteEvent(
+        calendarId: String,
+        eventId: String,
+        accessToken: String,
+        sendUpdates: SendUpdates = .all
+    ) async throws {
+        try await requestVoid(
+            method: "DELETE",
+            path: eventPath(calendarId, eventId),
+            query: [URLQueryItem(name: "sendUpdates", value: sendUpdates.rawValue)],
+            accessToken: accessToken
+        )
+    }
+
+    /// Moves an event to a different calendar (same organizer required).
+    ///
+    /// Reference: https://developers.google.com/calendar/api/v3/reference/events/move
+    func moveEvent(
+        calendarId: String,
+        eventId: String,
+        destination: String,
+        accessToken: String,
+        sendUpdates: SendUpdates = .all
+    ) async throws -> GCEvent {
+        try await request(
+            method: "POST",
+            path: eventPath(calendarId, eventId) + "/move",
+            query: [
+                URLQueryItem(name: "destination", value: destination),
+                URLQueryItem(name: "sendUpdates", value: sendUpdates.rawValue),
+            ],
+            accessToken: accessToken
+        )
+    }
+
+    /// Imports an externally-created event (preserving its iCalUID and organizer).
+    ///
+    /// Reference: https://developers.google.com/calendar/api/v3/reference/events/import
+    func importEvent(
+        calendarId: String,
+        accessToken: String,
+        body: GCEventWrite,
+        conferenceDataVersion: Int? = nil,
+        supportsAttachments: Bool? = nil
+    ) async throws -> GCEvent {
+        var query: [URLQueryItem] = []
+        if let conferenceDataVersion {
+            query.append(URLQueryItem(name: "conferenceDataVersion", value: String(conferenceDataVersion)))
+        }
+        if let supportsAttachments {
+            query.append(URLQueryItem(name: "supportsAttachments", value: supportsAttachments ? "true" : "false"))
+        }
+        return try await request(
+            method: "POST",
+            path: eventsPath(calendarId) + "/import",
+            query: query,
+            body: body,
+            accessToken: accessToken
+        )
+    }
+
+    /// Creates an event from a free-form natural-language string.
+    ///
+    /// Reference: https://developers.google.com/calendar/api/v3/reference/events/quickAdd
+    func quickAddEvent(
+        calendarId: String,
+        accessToken: String,
+        text: String,
+        sendUpdates: SendUpdates = .all
+    ) async throws -> GCEvent {
+        try await request(
+            method: "POST",
+            path: eventsPath(calendarId) + "/quickAdd",
+            query: [
+                URLQueryItem(name: "text", value: text),
+                URLQueryItem(name: "sendUpdates", value: sendUpdates.rawValue),
+            ],
+            accessToken: accessToken
+        )
+    }
+
+    // MARK: - Types
+
+    /// Notification policy for write operations.
+    enum SendUpdates: String, Sendable {
+        /// Notify all guests.
+        case all
+        /// Notify only external guests (non-Google-Workspace attendees).
+        case externalOnly
+        /// Do not send any notifications.
+        case none
+    }
+
+    // MARK: - Private helpers
+
+    private static let iso8601: ISO8601DateFormatter = {
+        let f = ISO8601DateFormatter()
+        f.formatOptions = [.withInternetDateTime]
+        return f
+    }()
+
+    private func escape(_ s: String) -> String {
+        s.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? s
+    }
+
+    private func eventsPath(_ calendarId: String) -> String {
+        "/calendars/\(escape(calendarId))/events"
+    }
+
+    private func eventPath(_ calendarId: String, _ eventId: String) -> String {
+        "/calendars/\(escape(calendarId))/events/\(escape(eventId))"
+    }
+
+    private func writeQuery(
+        sendUpdates: SendUpdates,
+        conferenceDataVersion: Int?,
+        supportsAttachments: Bool?
+    ) -> [URLQueryItem] {
+        var query = [URLQueryItem(name: "sendUpdates", value: sendUpdates.rawValue)]
+        if let conferenceDataVersion {
+            query.append(URLQueryItem(name: "conferenceDataVersion", value: String(conferenceDataVersion)))
+        }
+        if let supportsAttachments {
+            query.append(URLQueryItem(name: "supportsAttachments", value: supportsAttachments ? "true" : "false"))
+        }
+        return query
+    }
+
+    // Decodable response, with JSON body.
+    private func request<T: Decodable, B: Encodable>(
+        method: String,
+        path: String,
+        query: [URLQueryItem] = [],
+        body: B,
+        accessToken: String
+    ) async throws -> T {
+        let data = try JSONEncoder().encode(body)
+        let (responseData, _) = try await perform(
+            method: method,
+            path: path,
+            query: query,
+            bodyData: data,
+            accessToken: accessToken
+        )
+        return try JSONDecoder().decode(T.self, from: responseData)
+    }
+
+    // Decodable response, no body.
+    private func request<T: Decodable>(
+        method: String,
+        path: String,
+        query: [URLQueryItem] = [],
+        accessToken: String
+    ) async throws -> T {
+        let (responseData, _) = try await perform(
+            method: method,
+            path: path,
+            query: query,
+            bodyData: nil,
+            accessToken: accessToken
+        )
+        return try JSONDecoder().decode(T.self, from: responseData)
+    }
+
+    // No response body expected (e.g. DELETE).
+    private func requestVoid(
+        method: String,
+        path: String,
+        query: [URLQueryItem] = [],
+        accessToken: String
+    ) async throws {
+        _ = try await perform(
+            method: method,
+            path: path,
+            query: query,
+            bodyData: nil,
+            accessToken: accessToken
+        )
+    }
+
+    private func perform(
+        method: String,
+        path: String,
+        query: [URLQueryItem],
+        bodyData: Data?,
+        accessToken: String
+    ) async throws -> (Data, HTTPURLResponse) {
+        var components = URLComponents(string: Self.base + path)!
+        if !query.isEmpty {
+            components.queryItems = query
+        }
+        guard let url = components.url else {
+            throw APIError.httpError(statusCode: -1, body: "Invalid URL for \(path)")
+        }
+
+        var req = URLRequest(url: url)
+        req.httpMethod = method
+        req.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
+        if let bodyData {
+            req.httpBody = bodyData
+            req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        }
+
+        let (data, response) = try await URLSession.shared.data(for: req)
+
+        guard let http = response as? HTTPURLResponse else {
+            throw APIError.httpError(statusCode: -1, body: "No HTTP response")
+        }
+        if !(200...299).contains(http.statusCode) {
+            let body = String(data: data, encoding: .utf8) ?? ""
+            await Logger.shared.error(
+                "GoogleCalendarAPI \(method, privacy: .public) \(path, privacy: .public) HTTP \(http.statusCode): \(body, privacy: .public)"
+            )
+            if http.statusCode == 429 { throw APIError.rateLimited }
+            throw APIError.httpError(statusCode: http.statusCode, body: body)
+        }
+        return (data, http)
+    }
+}

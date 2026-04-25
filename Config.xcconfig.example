@@ -1,0 +1,3 @@
+// Google OAuth Client ID (Desktop app type)
+// Copy this file to Config.xcconfig and replace with your real client ID
+GOOGLE_CLIENT_ID = YOUR_CLIENT_ID_HERE
