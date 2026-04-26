@@ -76,7 +76,7 @@ final class MenuBarRightClick {
           let eventManager = self?.eventManager
         else { return }
         Task { @MainActor in
-          guard await accountManager.upsert() != nil else { return }
+          guard let account = await accountManager.upsert(), account.canRead else { return }
           await eventManager.sync()
         }
       }

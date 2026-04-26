@@ -23,8 +23,13 @@ nonisolated struct OAuthTokens: Codable, Sendable {
         Date.now.addingTimeInterval(60) >= expiresAt
     }
 
+    /// Whether the granted scopes include calendar read access.
+    var canRead: Bool {
+        grantedScopes.contains(AuthConfig.calendarReadScope)
+    }
+
     /// Whether the granted scopes include event write access (`calendar.events`).
-    var hasEventsWriteScope: Bool {
+    var canWrite: Bool {
         grantedScopes.contains(AuthConfig.eventsWriteScope)
     }
 

@@ -20,8 +20,10 @@ final class GoogleAccount {
     /// Whether this account's events are visible in the popover.
     /// Display-only filter — disabled accounts still sync from Google.
     var isVisible: Bool = true
-    /// Whether the user granted the `calendar.events` (read+write) OAuth scope.
-    var hasEventsWriteScope: Bool = false
+    /// Whether the token currently has calendar read permission.
+    var canRead: Bool = true
+    /// Whether the token currently has event mutation permission.
+    var canWrite: Bool = false
     /// Google multi-sign-in index injected as `authuser=N` when opening this
     /// account's calendar/meet URLs. `0` = first signed-in browser session.
     var authuser: Int = 0
@@ -33,14 +35,16 @@ final class GoogleAccount {
         email: String,
         displayName: String,
         isVisible: Bool = true,
-        hasEventsWriteScope: Bool = false,
+        canRead: Bool = true,
+        canWrite: Bool = false,
         authuser: Int = 0
     ) {
         self.accountId = accountId
         self.email = email
         self.displayName = displayName
         self.isVisible = isVisible
-        self.hasEventsWriteScope = hasEventsWriteScope
+        self.canRead = canRead
+        self.canWrite = canWrite
         self.authuser = authuser
     }
 }

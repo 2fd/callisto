@@ -19,9 +19,9 @@ struct Popover: View {
             }, isRefreshing: eventManager.isSyncing)
 
             Divider()
-                .padding(.horizontal, 12)
+                .padding(.horizontal, 6)
 
-            if accountManager.iter().isEmpty {
+            if accountManager.iter().filter(\.canRead).isEmpty {
                 NoAccountsView(onManageAccount: { openWindows(.settings) })
             } else {
                 EventListView(

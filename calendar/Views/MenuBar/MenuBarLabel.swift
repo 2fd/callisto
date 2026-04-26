@@ -64,18 +64,11 @@ struct MenuBarEventLabel: View {
     }
 
     if event.startDate.isTomorrow {
-      return ""
+      return "Tomorrow: "
     }
 
     return
       "\(event.startDate.format(f: "EEE")), \(event.startDate.formatted(date: .omitted, time: .shortened)): "
-  }
-}
-
-struct MenuBarSpace: View {
-  var body: some View {
-    Rectangle()
-      .frame(width: 4, height: 4)
   }
 }
 

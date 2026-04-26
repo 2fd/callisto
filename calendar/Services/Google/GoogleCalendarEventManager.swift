@@ -74,8 +74,8 @@ final class GoogleCalendarEventManager {
     let calendarsById = Dictionary(
       uniqueKeysWithValues: calendars.iter().map { ($0.calendarId, $0) }
     )
-    let visibleAccounts = Set(
-      accountsById.values.filter(\.isVisible).map(\.accountId)
+    let readableVisibleAccounts = Set(
+      accountsById.values.filter { $0.isVisible && $0.canRead }.map(\.accountId)
     )
     let visibleCalendars = Set(
       calendarsById.values.filter(\.isVisible).map(\.calendarId)
@@ -84,12 +84,14 @@ final class GoogleCalendarEventManager {
     var result: [EventEntry] = events.compactMap { event in
       guard event.startDate >= yesterday,
         event.startDate < upperBound,
-        visibleAccounts.contains(event.accountId),
+        readableVisibleAccounts.contains(event.accountId),
         visibleCalendars.contains(event.calendarId),
         event.status != EventStatus.cancelled,
         event.endDate > startOfToday,
         let calendar = calendarsById[event.calendarId],
-        let account = accountsById[event.accountId]
+        calendar.accountId == event.accountId,
+        let account = accountsById[event.accountId],
+        account.canRead
       else { return nil }
       return EventEntry(event: event, calendar: calendar, account: account)
     }
@@ -139,19 +141,23 @@ final class GoogleCalendarEventManager {
   func next() -> GoogleCalendarEvent? {
     _ = version
     let now = Date.now
-    let visibleAccounts = Set(
-      accounts.iter().filter(\.isVisible).map(\.accountId)
+    let readableVisibleAccounts = Set(
+      accounts.iter().filter { $0.isVisible && $0.canRead }.map(\.accountId)
+    )
+    let calendarsById = Dictionary(
+      uniqueKeysWithValues: calendars.iter().map { ($0.calendarId, $0) }
     )
     let visibleCalendars = Set(
-      calendars.iter().filter(\.isVisible).map(\.calendarId)
+      calendarsById.values.filter(\.isVisible).map(\.calendarId)
     )
 
     let upcoming = events.filter { event in
       event.endDate > now
         && !event.isDeclined
         && event.status != EventStatus.cancelled
-        && visibleAccounts.contains(event.accountId)
+        && readableVisibleAccounts.contains(event.accountId)
         && visibleCalendars.contains(event.calendarId)
+        && calendarsById[event.calendarId]?.accountId == event.accountId
     }.sorted { $0.startDate < $1.startDate }
 
     return upcoming.first { !$0.isAllDay } ?? upcoming.first
@@ -191,6 +197,7 @@ final class GoogleCalendarEventManager {
             )
             return (accountId, calendarId, events)
           } catch {
+            await self.handleReadFailure(accountId: accountId, error: error)
             await Logger.shared.error(
               "Event fetch failed \(accountId, privacy: .public)/\(calendarId, privacy: .public): \(error.localizedDescription, privacy: .public)"
             )
@@ -252,7 +259,7 @@ final class GoogleCalendarEventManager {
     scope: RecurringScope = .thisEvent
   ) async throws {
     guard let account = accounts.get(event.accountId),
-      account.hasEventsWriteScope
+      account.canWrite
     else {
       throw MutationError.missingWriteScope
     }
@@ -323,7 +330,7 @@ final class GoogleCalendarEventManager {
     scope: RecurringScope = .thisEvent
   ) async throws {
     guard let account = accounts.get(event.accountId),
-      account.hasEventsWriteScope
+      account.canWrite
     else {
       throw MutationError.missingWriteScope
     }
@@ -382,6 +389,12 @@ final class GoogleCalendarEventManager {
     removeLocal(event: event)
     try? modelContext.save()
     version &+= 1
+  }
+
+  /// Updates account permission state after a failed event mutation.
+  func handleMutationFailure(_ event: GoogleCalendarEvent, error: Error) {
+    guard error.isPermissionDenied else { return }
+    accounts.markWritePermissionDenied(event.accountId)
   }
 
   // MARK: - Mutation support
@@ -585,6 +598,12 @@ final class GoogleCalendarEventManager {
   }
 
   // MARK: - Private
+
+  private func handleReadFailure(accountId: String, error: Error) {
+    guard error.isPermissionDenied else { return }
+    accounts.markReadPermissionDenied(accountId)
+    logout(accountId: accountId)
+  }
 
   private func applySync(
     accountId: String,

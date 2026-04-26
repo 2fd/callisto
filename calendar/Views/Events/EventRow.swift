@@ -18,7 +18,7 @@ struct EventRow: View {
     HStack(alignment: .center) {
       RoundedRectangle(cornerRadius: 6)
         .fill(Color(hex: calendar.backgroundColor))
-        .opacity(!withIndicator ? 0 : 0.75)
+        .opacity(!withIndicator ? 0 : 1)
         .frame(width: 4, height: oneLiner ? 20 : 36)
 
       VStack(alignment: .leading, spacing: 2) {
@@ -35,25 +35,25 @@ struct EventRow: View {
 
           Spacer()
 
-          if event.isBirthday {
-            Image(systemName: "gift")
-              .resizable()
-              .aspectRatio(contentMode: .fit)
-              .frame(width: 12, height: 12)
-              .foregroundStyle(.secondary)
-              .help("birthday")
-          }
-
-          if event.isOutOfOffice {
-            if event.isAllDay {
+          if event.isAllDay {
+            if event.isOutOfOffice {
               Image(systemName: "minus.circle.fill")
                 .resizable()
                 .aspectRatio(contentMode: .fit)
                 .frame(width: 12, height: 12)
                 .foregroundStyle(.secondary)
                 .help("out of office")
-
-            } else {
+              
+            } else if event.isBirthday{
+              Image(systemName: "gift")
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: 12, height: 12)
+                .foregroundStyle(.secondary)
+                .help("birthday")
+              
+            }
+          } else if event.isOutOfOffice {
               EventRowTimeRange(event: event)
                 .font(.caption)
                 .strikethrough(withStrikethrough)
@@ -61,7 +61,6 @@ struct EventRow: View {
                   withBordered
                     ? Color(hex: calendar.backgroundColor) : Color.secondary
                 )
-            }
           }
 
           if event.isImportant {
@@ -113,7 +112,7 @@ struct EventRow: View {
     }
     .opacity(event.isPast ? 0.4 : 1.0)
     .padding(.vertical, 4)
-    .padding(.leading, 8)
+    .padding(.leading, 10)
     .padding(.trailing, 4)
     .contentShape(Rectangle())
     .onTapGesture {

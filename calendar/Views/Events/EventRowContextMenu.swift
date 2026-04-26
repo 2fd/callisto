@@ -11,7 +11,6 @@ struct EventRowContextMenu: View {
   let entry: EventEntry
 
   @Environment(GoogleCalendarEventManager.self) private var eventManager
-  @Environment(GoogleAccountManager.self) private var accountManager
 
   private var event: GoogleCalendarEvent { entry.event }
   private var account: GoogleAccount { entry.account }
@@ -68,19 +67,21 @@ struct EventRowContextMenu: View {
 
   // MARK: - Mutations
 
+  private var canMutateEvent: Bool {
+    account.canWrite && entry.calendar.canWriteEvents
+  }
+
   @ViewBuilder
   private var mutationSection: some View {
-    if !account.hasEventsWriteScope {
-      Button("Grant edit permission…") {
-        Task { _ = await accountManager.upgrade(account) }
-      }
-    } else if canOrganizerDelete {
-      scopedAction(title: "Delete", role: .destructive) { scope in
-        perform { try await eventManager.deleteEvent(event, scope: scope) }
-      }
-    } else {
-      scopedAction(title: "Delete for me", role: .destructive) { scope in
-        perform { try await eventManager.deleteForMe(event, scope: scope) }
+    if canMutateEvent {
+      if canOrganizerDelete {
+        scopedAction(title: "Delete", role: .destructive) { scope in
+          perform { try await eventManager.deleteEvent(event, scope: scope) }
+        }
+      } else {
+        scopedAction(title: "Delete for me", role: .destructive) { scope in
+          perform { try await eventManager.deleteForMe(event, scope: scope) }
+        }
       }
     }
   }
@@ -147,7 +148,7 @@ struct EventRowContextMenu: View {
   }
 
   private var canRSVP: Bool {
-    account.hasEventsWriteScope
+    canMutateEvent
       && isDefaultEvent
       && event.selfAttendee != nil
       && !event.locked
@@ -200,6 +201,7 @@ struct EventRowContextMenu: View {
       do {
         try await block()
       } catch {
+        await eventManager.handleMutationFailure(event, error: error)
         Logger.shared.error(
           "Event mutation failed: \(error.localizedDescription, privacy: .public)"
         )

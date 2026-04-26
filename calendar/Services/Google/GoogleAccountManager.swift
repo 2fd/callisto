@@ -40,6 +40,7 @@ final class GoogleAccountManager {
     self.modelContext = ModelContext(container)
     self.accounts =
       (try? modelContext.fetch(FetchDescriptor<GoogleAccount>())) ?? []
+    reconcilePermissionsFromKeychain()
   }
 
   // MARK: - Iteration
@@ -74,7 +75,8 @@ final class GoogleAccountManager {
     if let existing = get(info.sub) {
       existing.email = info.email
       existing.displayName = info.name ?? info.email
-      existing.hasEventsWriteScope = tokens.hasEventsWriteScope
+      existing.canRead = tokens.canRead
+      existing.canWrite = tokens.canWrite
       try? modelContext.save()
       bump()
       return existing
@@ -84,7 +86,8 @@ final class GoogleAccountManager {
       accountId: info.sub,
       email: info.email,
       displayName: info.name ?? info.email,
-      hasEventsWriteScope: tokens.hasEventsWriteScope
+      canRead: tokens.canRead,
+      canWrite: tokens.canWrite
     )
     modelContext.insert(account)
     try? modelContext.save()
@@ -93,13 +96,33 @@ final class GoogleAccountManager {
     return account
   }
 
+  /// Re-authorizes an existing account to request missing calendar read scope.
+  func grantReadPermission(_ account: GoogleAccount) async -> GoogleAccount {
+    await reauthorize(account)
+  }
+
   /// Re-authorizes an existing account to request the events write scope.
-  func upgrade(_ account: GoogleAccount) async -> GoogleAccount {
-    guard let (tokens, _) = await runOAuthFlow(loginHint: account.email)
+  func grantWritePermission(_ account: GoogleAccount) async -> GoogleAccount {
+    await reauthorize(account)
+  }
+
+  private func reauthorize(_ account: GoogleAccount) async -> GoogleAccount {
+    guard let (tokens, info) = await runOAuthFlow(loginHint: account.email)
     else { return account }
+
+    guard info.sub == account.accountId else {
+      Logger.shared.error(
+        "Reauthorization returned account \(info.sub, privacy: .public), expected \(account.accountId, privacy: .public)"
+      )
+      return account
+    }
+
     do {
       try KeychainService.save(tokens: tokens, for: account.accountId)
-      account.hasEventsWriteScope = tokens.hasEventsWriteScope
+      account.email = info.email
+      account.displayName = info.name ?? info.email
+      account.canRead = tokens.canRead
+      account.canWrite = tokens.canWrite
       try modelContext.save()
       bump()
     } catch {
@@ -142,6 +165,23 @@ final class GoogleAccountManager {
     get(accountId)?.authuser ?? 0
   }
 
+  /// Marks an account as missing calendar read permission.
+  func markReadPermissionDenied(_ accountId: String) {
+    guard let account = get(accountId), account.canRead else { return }
+    account.canRead = false
+    account.canWrite = false
+    try? modelContext.save()
+    bump()
+  }
+
+  /// Marks an account as missing event mutation permission.
+  func markWritePermissionDenied(_ accountId: String) {
+    guard let account = get(accountId), account.canWrite else { return }
+    account.canWrite = false
+    try? modelContext.save()
+    bump()
+  }
+
   // MARK: - Token access for other managers
 
   /// Returns a valid access token for the account, refreshing if expired.
@@ -164,7 +204,7 @@ final class GoogleAccountManager {
   /// Visibility is a display-only filter — all accounts sync regardless of
   /// ``GoogleAccount/isVisible`` so re-enabling is instant.
   func authenticated() async -> [String] {
-    let ids = accounts.map(\.accountId)
+    let ids = accounts.filter(\.canRead).map(\.accountId)
 
     return await withTaskGroup(of: String?.self) { group in
       for id in ids {
@@ -201,6 +241,43 @@ final class GoogleAccountManager {
 
   // MARK: - Private
 
+  private func reconcilePermissionsFromKeychain() {
+    var changed = false
+    for account in accounts {
+      guard let tokens = try? KeychainService.load(for: account.accountId) else {
+        continue
+      }
+      changed = applyPermissions(from: tokens, to: account) || changed
+    }
+    if changed {
+      try? modelContext.save()
+      bump()
+    }
+  }
+
+  @discardableResult
+  private func applyPermissions(from tokens: OAuthTokens, accountId: String) -> Bool {
+    guard let account = get(accountId) else { return false }
+    let changed = applyPermissions(from: tokens, to: account)
+    if changed {
+      try? modelContext.save()
+      bump()
+    }
+    return changed
+  }
+
+  @discardableResult
+  private func applyPermissions(from tokens: OAuthTokens, to account: GoogleAccount) -> Bool {
+    let canRead = tokens.canRead
+    let canWrite = tokens.canWrite
+    guard account.canRead != canRead || account.canWrite != canWrite else {
+      return false
+    }
+    account.canRead = canRead
+    account.canWrite = canWrite
+    return true
+  }
+
   private func logRefreshFailure(_ accountId: String, error: Error) {
     Logger.shared.error(
       "Token refresh failed for \(accountId, privacy: .public): \(error.localizedDescription, privacy: .public)"
@@ -221,6 +298,9 @@ final class GoogleAccountManager {
         accountId: accountId,
         existing: tokens
       )
+    }
+    if !tokens.grantedScopes.isEmpty {
+      applyPermissions(from: tokens, accountId: accountId)
     }
     return tokens.accessToken
   }

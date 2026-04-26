@@ -11,7 +11,7 @@ struct PopoverHeader: View {
 
   var body: some View {
     HStack(spacing: 8) {
-      Text(Date.now.format(f: "MMM yyyy"))
+      Text(Date.now.format(f: "MMM yyyy").uppercased())
         .font(.title3)
 
       Spacer()

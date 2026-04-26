@@ -52,6 +52,10 @@ final class GoogleCalendar {
 
     var displayName: String { summaryOverride ?? summary }
 
+    var canWriteEvents: Bool {
+        accessRole == "writer" || accessRole == "owner"
+    }
+
     // MARK: - Init
 
     init(

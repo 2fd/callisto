@@ -23,18 +23,19 @@ nonisolated enum AuthConfig {
     }()
     /// OAuth scopes requested during authorization.
     ///
-    /// Includes `calendar.events` for read+write access to events (accept/reject/edit).
-    /// The user may decline individual scopes; check ``OAuthTokens/hasEventsWriteScope``
-    /// to determine what was actually granted.
+    /// Includes read access for calendar lists/events and `calendar.events` for
+    /// event mutations (accept/reject/edit). The user may decline individual
+    /// scopes; check ``OAuthTokens/canRead`` and ``OAuthTokens/canWrite`` to
+    /// determine what was actually granted.
+    static let calendarReadScope = "https://www.googleapis.com/auth/calendar.readonly"
+    static let eventsWriteScope = "https://www.googleapis.com/auth/calendar.events"
+
     static let scopes = [
-        "https://www.googleapis.com/auth/calendar.readonly",
-        "https://www.googleapis.com/auth/calendar.events",
+        calendarReadScope,
+        eventsWriteScope,
         "https://www.googleapis.com/auth/userinfo.email",
         "https://www.googleapis.com/auth/userinfo.profile",
     ]
-
-    /// The scope URI that grants read+write access to calendar events.
-    static let eventsWriteScope = "https://www.googleapis.com/auth/calendar.events"
 
     /// Google OAuth authorization endpoint.
     static let authorizationEndpoint = "https://accounts.google.com/o/oauth2/v2/auth"

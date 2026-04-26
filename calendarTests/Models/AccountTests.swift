@@ -25,6 +25,7 @@ struct AccountTests {
         let account = GoogleAccount(accountId: "x", email: "x@y.com", displayName: "X")
         #expect(account.isVisible == true)
         #expect(account.lastSyncedAt == nil)
-        #expect(account.hasEventsWriteScope == false)
+        #expect(account.canRead == true)
+        #expect(account.canWrite == false)
     }
 }

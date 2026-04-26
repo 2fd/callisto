@@ -1,5 +1,12 @@
 import Foundation
 
+extension Error {
+    var isPermissionDenied: Bool {
+        guard let apiError = self as? APIError else { return false }
+        return apiError.isPermissionDenied
+    }
+}
+
 /// Errors returned by Google API requests.
 nonisolated enum APIError: LocalizedError, Sendable, Equatable {
     nonisolated static func == (lhs: APIError, rhs: APIError) -> Bool {
@@ -14,6 +21,13 @@ nonisolated enum APIError: LocalizedError, Sendable, Equatable {
     case httpError(statusCode: Int, body: String)
     /// The API returned HTTP 429 (Too Many Requests).
     case rateLimited
+
+    var isPermissionDenied: Bool {
+        switch self {
+        case .httpError(let code, _): code == 401 || code == 403
+        case .rateLimited: false
+        }
+    }
 
     var errorDescription: String? {
         switch self {

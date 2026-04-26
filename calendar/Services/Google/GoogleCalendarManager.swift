@@ -32,10 +32,13 @@ final class GoogleCalendarManager {
 
   func iter() -> [GoogleCalendar] {
     _ = version
-    return calendars
+    let readableAccounts = Set(accounts.iter().filter(\.canRead).map(\.accountId))
+    return calendars.filter { readableAccounts.contains($0.accountId) }
   }
 
   func iterByAccount(accountId: String) -> [GoogleCalendar] {
+    guard accounts.get(accountId)?.canRead == true else { return [] }
+    _ = version
     return calendars.filter { $0.accountId == accountId }
   }
 
@@ -44,6 +47,7 @@ final class GoogleCalendarManager {
   }
 
   func forAccount(_ accountId: String) -> [GoogleCalendar] {
+    guard accounts.get(accountId)?.canRead == true else { return [] }
     _ = version
     return calendars.filter { $0.accountId == accountId }
   }
@@ -105,6 +109,7 @@ final class GoogleCalendarManager {
             let entries = try await self.fetch(accountId: accountId)
             return (accountId, entries)
           } catch {
+            await self.handleReadFailure(accountId, error: error)
             await Logger.shared.error(
               "Calendar list fetch failed for \(accountId, privacy: .public): \(error.localizedDescription, privacy: .public)"
             )
@@ -138,6 +143,12 @@ final class GoogleCalendarManager {
   }
 
   // MARK: - Private
+
+  private func handleReadFailure(_ accountId: String, error: Error) {
+    guard error.isPermissionDenied else { return }
+    accounts.markReadPermissionDenied(accountId)
+    logout(accountId: accountId)
+  }
 
   private func applySync(accountId: String, entries: [GCCalendarListEntry]) {
     let existing = Dictionary(

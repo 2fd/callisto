@@ -9,7 +9,8 @@
             email: String = "user@gmail.com",
             displayName: String = "Mock User",
             isVisible: Bool = true,
-            hasEventsWriteScope: Bool = false,
+            canRead: Bool = true,
+            canWrite: Bool = false,
             authuser: Int = 0
         ) -> GoogleAccount {
             GoogleAccount(
@@ -17,7 +18,8 @@
                 email: email,
                 displayName: displayName,
                 isVisible: isVisible,
-                hasEventsWriteScope: hasEventsWriteScope,
+                canRead: canRead,
+                canWrite: canWrite,
                 authuser: authuser
             )
         }

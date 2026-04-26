@@ -76,13 +76,15 @@ struct SettingsWindow: View {
           ForEach(accountManager.iter(), id: \.accountId) { account in
             Section(account.email) {
               AccountSettingsRow(account: account)
-              AccountCalendarSettingsRow(account: account)
-              ForEach(
-                calendarManager.iterByAccount(
-                  accountId: account.accountId
-                )
-              ) { calendar in
-                CalendarSettingsRow(account: account, calendar: calendar)
+              if account.canRead {
+                AccountCalendarSettingsRow(account: account)
+                ForEach(
+                  calendarManager.iterByAccount(
+                    accountId: account.accountId
+                  )
+                ) { calendar in
+                  CalendarSettingsRow(account: account, calendar: calendar)
+                }
               }
 
               AccountRemove(account: account)
@@ -99,78 +101,125 @@ struct SettingsWindow: View {
 
   }
 
-  /// A single account with expandable calendar toggles.
   private struct AccountSettingsRow: View {
     let account: GoogleAccount
     @Environment(GoogleAccountManager.self) private var accountManager
-    @Environment(GoogleCalendarManager.self) private var calendarManager
     @Environment(GoogleCalendarEventManager.self) private var eventManager
-    @State private var isExpanded = false
     @State private var isReauthorizing = false
 
-    private var accountCalendars: [GoogleCalendar] {
-      calendarManager.forAccount(account.accountId)
-        .sorted {
-          $0.summary.localizedCaseInsensitiveCompare($1.summary)
-            == .orderedAscending
-        }
+    var body: some View {
+      VStack(alignment: .leading, spacing: 8) {
+        permissionStatus
+        authuserControls
+      }
+      .padding(.vertical, 2)
     }
 
-    var body: some View {
-      VStack(alignment: .leading, spacing: 6) {
+    @ViewBuilder
+    private var permissionStatus: some View {
+      if !account.canRead {
+        PermissionActionRow(
+          title: "Calendar access needed",
+          message: "Grant read permission to sync calendars and events for this account.",
+          buttonTitle: isReauthorizing ? "Requesting…" : "Grant read permission",
+          isDisabled: isReauthorizing,
+          action: grantReadPermission
+        )
+      } else if !account.canWrite {
+        PermissionActionRow(
+          title: "Read-only account",
+          message: "Calendars and events will sync, but edit actions are hidden until write permission is granted.",
+          buttonTitle: isReauthorizing ? "Requesting…" : "Grant edit permission",
+          isDisabled: isReauthorizing,
+          action: grantEditPermission
+        )
+      }
+    }
 
-        HStack {
-          VStack(alignment: .leading, spacing: 0) {
-            Text("Authuser:")
-            Text("Google session index.")
-              .font(.caption)
-              .foregroundStyle(.secondary)
-          }
-
-          Spacer()
-
-          Button {
-            accountManager.setAuthUser(
-              account,
-              authuser: max(account.authuser - 1, 0)
-            )
-          } label: {
-            Image(systemName: "minus")
-              .frame(width: 12, height: 12)
-          }
-          .disabled(account.authuser <= 0)
-          .eventHoverEffect()
-
-          Button {
-          } label: {
-            Text(account.authuser, format: .number)
-
-          }
-          .frame(width: 24)
-          .buttonStyle(.borderless)
-
-          Button {
-            accountManager.setAuthUser(
-              account,
-              authuser: min(account.authuser + 1, 99)
-            )
-          } label: {
-            Image(systemName: "plus")
-              .frame(width: 12, height: 12)
-          }
-          .disabled(account.authuser >= 99)
-          .eventHoverEffect()
+    private var authuserControls: some View {
+      HStack {
+        VStack(alignment: .leading, spacing: 0) {
+          Text("Authuser:")
+          Text("Google session index.")
+            .font(.caption)
+            .foregroundStyle(.secondary)
         }
 
-      }.padding(.vertical, 2)
+        Spacer()
+
+        Button {
+          accountManager.setAuthUser(
+            account,
+            authuser: max(account.authuser - 1, 0)
+          )
+        } label: {
+          Image(systemName: "minus")
+            .frame(width: 12, height: 12)
+        }
+        .disabled(account.authuser <= 0)
+        .eventHoverEffect()
+
+        Button {
+        } label: {
+          Text(account.authuser, format: .number)
+        }
+        .frame(width: 24)
+        .buttonStyle(.borderless)
+
+        Button {
+          accountManager.setAuthUser(
+            account,
+            authuser: min(account.authuser + 1, 99)
+          )
+        } label: {
+          Image(systemName: "plus")
+            .frame(width: 12, height: 12)
+        }
+        .disabled(account.authuser >= 99)
+        .eventHoverEffect()
+      }
+    }
+
+    private func grantReadPermission() {
+      isReauthorizing = true
+      Task {
+        defer { isReauthorizing = false }
+        let updated = await accountManager.grantReadPermission(account)
+        if updated.canRead {
+          await eventManager.sync()
+        }
+      }
     }
 
     private func grantEditPermission() {
       isReauthorizing = true
       Task {
         defer { isReauthorizing = false }
-        _ = await accountManager.upgrade(account)
-        await eventManager.sync()
+        let updated = await accountManager.grantWritePermission(account)
+        if updated.canRead {
+          await eventManager.sync()
+        }
+      }
+    }
+  }
+
+  private struct PermissionActionRow: View {
+    let title: String
+    let message: String
+    let buttonTitle: String
+    let isDisabled: Bool
+    let action: () -> Void
+
+    var body: some View {
+      VStack(alignment: .leading, spacing: 6) {
+        Text(title)
+          .font(.subheadline)
+        Text(message)
+          .font(.caption)
+          .foregroundStyle(.secondary)
+        Button(buttonTitle, action: action)
+          .disabled(isDisabled)
+          .eventHoverEffect()
       }
     }
   }
@@ -212,11 +261,11 @@ struct SettingsWindow: View {
 
     var body: some View {
       HStack(alignment: .center) {
-
-        Circle()
-          .foregroundStyle(Color(hex: calendar.backgroundColor))
-          .frame(width: 12, height: 12)
-          .padding(.horizontal, 2)
+        
+        
+        RoundedRectangle(cornerRadius: 6)
+          .fill(Color(hex: calendar.backgroundColor))
+          .frame(width: 4, height: 20)
 
         Text(calendar.displayName)
           .foregroundStyle(
@@ -252,19 +301,9 @@ struct SettingsWindow: View {
     @Environment(GoogleCalendarManager.self) private var calendarManager
     @Environment(GoogleCalendarEventManager.self) private var eventManager
     @State private var showDeleteConfirmation = false
-    @State private var isExpanded = false
-    @State private var isReauthorizing = false
-
-    private var accountCalendars: [GoogleCalendar] {
-      calendarManager.forAccount(account.accountId)
-        .sorted {
-          $0.summary.localizedCaseInsensitiveCompare($1.summary)
-            == .orderedAscending
-        }
-    }
-
     var body: some View {
       Button(role: .destructive) {
+        showDeleteConfirmation = true
       } label: {
 
         HStack(spacing: 4) {
@@ -296,13 +335,12 @@ struct SettingsWindow: View {
 
   private struct AccountAdd: View {
     @Environment(GoogleAccountManager.self) private var accountManager
-    @Environment(GoogleCalendarManager.self) private var calendarManager
     @Environment(GoogleCalendarEventManager.self) private var eventManager
 
     var body: some View {
       Button {
         Task {
-          guard await accountManager.upsert() != nil
+          guard let account = await accountManager.upsert(), account.canRead
           else { return }
           await eventManager.sync()
         }

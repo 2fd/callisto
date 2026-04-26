@@ -56,13 +56,13 @@ struct DaySectionHeader: View {
     let date: Date
 
     var body: some View {
-        Text(date.format(f: "EEE dd"))
-            .font(.caption)
+      Text(date.format(f: "EEE dd").uppercased())
+            .font(.headline)
             .fontWeight(.semibold)
             .foregroundStyle(.secondary)
             .padding(.horizontal, 12)
             .padding(.top, 8)
-            .padding(.bottom, 4)
+            .padding(.bottom, 2)
     }
 }
 
