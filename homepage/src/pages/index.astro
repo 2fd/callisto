@@ -1,0 +1,68 @@
+---
+import "@/styles/global.css"
+import Button from "@/components/ui/Button.astro"
+import Card from "@/components/ui/Card.astro"
+import CardContent from "@/components/ui/CardContent.astro"
+import CardDescription from "@/components/ui/CardDescription.astro"
+import CardHeader from "@/components/ui/CardHeader.astro"
+import CardTitle from "@/components/ui/CardTitle.astro"
+---
+
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<link rel="icon" href="/favicon.ico" />
+		<meta name="viewport" content="width=device-width" />
+		<meta name="generator" content={Astro.generator} />
+		<title>Homepage</title>
+	</head>
+	<body>
+		<main class="min-h-screen bg-background px-6 py-16 text-foreground">
+			<section class="mx-auto flex max-w-4xl flex-col items-start gap-8">
+				<div class="space-y-4">
+					<p class="text-sm font-medium uppercase tracking-[0.3em] text-muted-foreground">
+						Astro on Cloudflare Workers
+					</p>
+					<h1 class="max-w-3xl text-5xl font-semibold tracking-tight sm:text-6xl">
+						Homepage workspace
+					</h1>
+					<p class="max-w-2xl text-lg text-muted-foreground">
+						A pnpm workspace powered by Astro, Tailwind CSS, shadcn/ui,
+						Wrangler, and the Oxc toolchain.
+					</p>
+				</div>
+
+				<div class="flex flex-wrap gap-3">
+					<Button>Start building</Button>
+					<Button variant="outline">View docs</Button>
+				</div>
+
+				<div class="grid w-full gap-4 md:grid-cols-3">
+					<Card>
+						<CardHeader>
+							<CardTitle>Astro</CardTitle>
+							<CardDescription>Fast content-focused site foundation.</CardDescription>
+						</CardHeader>
+						<CardContent>Configured for server output on Cloudflare Workers.</CardContent>
+					</Card>
+					<Card>
+						<CardHeader>
+							<CardTitle>Tailwind + shadcn</CardTitle>
+							<CardDescription>Modern utility styling and reusable UI.</CardDescription>
+						</CardHeader>
+						<CardContent>Ready with the Button and Card components.</CardContent>
+					</Card>
+					<Card>
+						<CardHeader>
+							<CardTitle>Ox</CardTitle>
+							<CardDescription>Fast linting and formatting workflows.</CardDescription>
+						</CardHeader>
+						<CardContent>Use workspace scripts to check or fix code quality.</CardContent>
+					</Card>
+				</div>
+			</section>
+		</main>
+	</body>
+</html>
+
