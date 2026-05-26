@@ -7,7 +7,6 @@ import SwiftData
 /// of `calendarId/eventId` to avoid collisions across calendars.
 @Model
 final class GoogleCalendarEvent {
-  #Unique<GoogleCalendarEvent>([\.compositeId])
 
   // MARK: - Identity
 
@@ -277,7 +276,10 @@ final class GoogleCalendarEvent {
       summary: s,
       startDate: start.date,
       endDate: end.date,
-      isAllDay: start.isAllDay,
+      isAllDay: start.isAllDay || Self.isMidnightToMidnight(
+        event.start,
+        event.end
+      ),
       htmlLink: event.htmlLink ?? "",
       status: event.status,
       eventType: event.eventType
@@ -313,7 +315,8 @@ final class GoogleCalendarEvent {
     isImportant = important
     startDate = start.date
     endDate = end.date
-    isAllDay = start.isAllDay
+    isAllDay =
+      start.isAllDay || Self.isMidnightToMidnight(event.start, event.end)
     htmlLink = event.htmlLink ?? ""
     status = event.status
     eventType = event.eventType
@@ -409,6 +412,28 @@ extension GoogleCalendarEvent {
       return (d, true)
     }
     return nil
+  }
+
+  static func isMidnightToMidnight(
+    _ start: GCEventDateTime?,
+    _ end: GCEventDateTime?
+  ) -> Bool {
+    guard let startDateTime = start?.dateTime,
+      let endDateTime = end?.dateTime
+    else {
+      return false
+    }
+
+    return isMidnightDateTime(startDateTime) && isMidnightDateTime(endDateTime)
+  }
+
+  private static func isMidnightDateTime(_ value: String) -> Bool {
+    guard let timeStart = value.firstIndex(of: "T") else {
+      return false
+    }
+
+    let time = value[value.index(after: timeStart)...]
+    return time.hasPrefix("00:00:00")
   }
 }
 

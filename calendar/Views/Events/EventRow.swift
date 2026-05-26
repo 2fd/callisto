@@ -125,7 +125,13 @@ struct EventRow: View {
       isHover = hover
     }
     .background {
-      if event.isOutOfOffice {
+      if withPlay {
+        OngoingEventBackground(
+          tint: Color(hex: calendar.backgroundColor),
+          isHovering: isHover
+        )
+
+      } else if event.isOutOfOffice {
         RoundedRectangle(cornerRadius: 4)
           .fill(.red)
           .opacity(isHover ? 0.3 : 0.2)
@@ -133,8 +139,8 @@ struct EventRow: View {
 
       } else if withBordered {
         RoundedRectangle(cornerRadius: 4)
-          .fill(.primary)
-          .opacity(isHover ? 0.5 : 0.3)
+          .fill(rowSurface)
+          .opacity(isHover ? 0.85 : 1.0)
           .padding(.horizontal, 4)
 
         RoundedRectangle(cornerRadius: 4)
@@ -152,11 +158,15 @@ struct EventRow: View {
         }
 
         RoundedRectangle(cornerRadius: 6)
-          .fill(.primary)
-          .opacity(isHover ? 0.5 : 0.3)
+          .fill(rowSurface)
+          .opacity(isHover ? 0.85 : 1.0)
           .padding(.horizontal, 4)
       }
     }
+  }
+
+  private var rowSurface: Color {
+    Color(nsColor: NSColor.alternatingContentBackgroundColors[1])
   }
 
   private var oneLiner: Bool {
@@ -193,10 +203,77 @@ struct EventRow: View {
 
 }
 
+/// A moving calendar-tinted background for a meeting that is happening now.
+private struct OngoingEventBackground: View {
+  let tint: Color
+  let isHovering: Bool
+
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+  var body: some View {
+    Group {
+      if #available(macOS 15.0, *) {
+        if reduceMotion {
+          OngoingEventMesh(tint: tint, phase: 0)
+        } else {
+          TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { timeline in
+            OngoingEventMesh(
+              tint: tint,
+              phase: timeline.date.timeIntervalSinceReferenceDate
+            )
+          }
+        }
+      } else {
+        RoundedRectangle(cornerRadius: 6)
+          .fill(
+            LinearGradient(
+              colors: [tint.opacity(0.38), tint.opacity(0.12), tint.opacity(0.28)],
+              startPoint: .leading,
+              endPoint: .trailing
+            )
+          )
+      }
+    }
+    .opacity(isHovering ? 0.85 : 0.65)
+    .clipShape(RoundedRectangle(cornerRadius: 6))
+    .padding(.horizontal, 4)
+  }
+}
+
+@available(macOS 15.0, *)
+private struct OngoingEventMesh: View {
+  let tint: Color
+  let phase: TimeInterval
+
+  var body: some View {
+    let horizontalDrift = Float(sin(phase * 0.8)) * 0.13
+    let verticalDrift = Float(cos(phase * 0.65)) * 0.12
+
+    MeshGradient(
+      width: 3,
+      height: 3,
+      points: [
+        SIMD2(0, 0), SIMD2(0.5, 0), SIMD2(1, 0),
+        SIMD2(0, 0.5), SIMD2(0.5 + horizontalDrift, 0.5 + verticalDrift), SIMD2(1, 0.5),
+        SIMD2(0, 1), SIMD2(0.5, 1), SIMD2(1, 1),
+      ],
+      colors: [
+        tint.opacity(0.18), tint.opacity(0.42), tint.opacity(0.16),
+        tint.opacity(0.4), tint.opacity(0.75), .accentColor.opacity(0.38),
+        tint.opacity(0.16), .accentColor.opacity(0.3), tint.opacity(0.2),
+      ]
+    )
+  }
+}
+
 struct EventRowTimeRange: View {
   let event: GoogleCalendarEvent
+
+  @ViewBuilder
   var body: some View {
-    Text("\(start) - \(end)")
+    if !(event.isOutOfOffice && event.isAllDay) {
+      Text("\(start) - \(end)")
+    }
   }
 
   private var start: String {
@@ -231,7 +308,7 @@ struct DiagonalStripesPattern: View {
   }
 }
 
-#Preview {
+#Preview("State Gallery") {
   let container = try! ModelContainer(
     for: Schema([
       GoogleAccount.self, GoogleCalendar.self, GoogleCalendarEvent.self,
@@ -282,5 +359,6 @@ struct DiagonalStripesPattern: View {
   .frame(width: UI.Width)
   .padding(.vertical, 8)
   .padding(.horizontal, 8)
+  .background(Color(nsColor: .windowBackgroundColor))
 
 }

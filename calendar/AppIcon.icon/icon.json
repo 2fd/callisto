@@ -1,0 +1,132 @@
+{
+  "fill" : {
+    "solid" : "display-p3:0.09412,0.09412,0.16333,1.00000"
+  },
+  "groups" : [
+    {
+      "layers" : [
+        {
+          "glass" : false,
+          "image-name" : "Image 8.png",
+          "name" : "Image 8",
+          "position" : {
+            "scale" : 0.45,
+            "translation-in-points" : [
+              379.17967054084056,
+              -281.099825065808
+            ]
+          }
+        },
+        {
+          "glass" : false,
+          "image-name" : "Image 7.png",
+          "name" : "Image 7",
+          "position" : {
+            "scale" : 0.45,
+            "translation-in-points" : [
+              326.6999999999998,
+              -341.72655623138405
+            ]
+          }
+        },
+        {
+          "glass" : false,
+          "image-name" : "Image 6.png",
+          "name" : "Image 6",
+          "position" : {
+            "scale" : 0.45,
+            "translation-in-points" : [
+              379.17967054084056,
+              206.54546280528575
+            ]
+          }
+        },
+        {
+          "glass" : false,
+          "image-name" : "Image 5.png",
+          "name" : "Image 5",
+          "position" : {
+            "scale" : 0.45,
+            "translation-in-points" : [
+              328.4999999999998,
+              337.7249999999999
+            ]
+          }
+        },
+        {
+          "glass" : false,
+          "image-name" : "Image 4.png",
+          "name" : "Image 4",
+          "position" : {
+            "scale" : 0.45,
+            "translation-in-points" : [
+              -274.5000000000001,
+              337.5
+            ]
+          }
+        },
+        {
+          "glass" : false,
+          "image-name" : "Image 3.png",
+          "name" : "Image 3",
+          "position" : {
+            "scale" : 0.45,
+            "translation-in-points" : [
+              -382.4000000000001,
+              265.5181673488777
+            ]
+          }
+        },
+        {
+          "glass" : false,
+          "image-name" : "Image 2.png",
+          "name" : "Image 2",
+          "position" : {
+            "scale" : 0.45,
+            "translation-in-points" : [
+              -363.5000000000001,
+              -241.7166901971401
+            ]
+          }
+        },
+        {
+          "glass" : false,
+          "image-name" : "Image.png",
+          "name" : "Image",
+          "position" : {
+            "scale" : 0.45,
+            "translation-in-points" : [
+              -310.5000000000001,
+              -357.7015562313841
+            ]
+          }
+        },
+        {
+          "blend-mode" : "normal",
+          "fill" : "none",
+          "glass" : false,
+          "image-name" : "callisto.png",
+          "name" : "callisto",
+          "position" : {
+            "scale" : 0.44999999999999996,
+            "translation-in-points" : [
+              -9.000000000000114,
+              0
+            ]
+          }
+        }
+      ],
+      "shadow" : {
+        "kind" : "neutral",
+        "opacity" : 0.5
+      },
+      "translucency" : {
+        "enabled" : true,
+        "value" : 0.5
+      }
+    }
+  ],
+  "supported-platforms" : {
+    "squares" : "shared"
+  }
+}

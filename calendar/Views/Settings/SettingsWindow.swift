@@ -33,6 +33,8 @@ struct SettingsWindow: View {
     VStack {
 
       Form {
+        UpdatesSettingsSection()
+
         Section("Sync") {
           Picker(selection: $settings.refreshIntervalMinutes) {
             ForEach(refreshIntervalOptions, id: \.value) { option in

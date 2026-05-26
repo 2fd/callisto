@@ -34,4 +34,34 @@ struct DateParsingTests {
         let dto = GCEventDateTime(dateTime: nil, date: nil, timeZone: nil)
         #expect(GoogleCalendarEvent.parseEventDateTime(dto) == nil)
     }
+
+    @Test func midnightToMidnightDateTimesAreAllDay() {
+        let start = GCEventDateTime(
+            dateTime: "2026-03-24T00:00:00-03:00",
+            date: nil,
+            timeZone: "America/Argentina/Buenos_Aires"
+        )
+        let end = GCEventDateTime(
+            dateTime: "2026-03-25T00:00:00-03:00",
+            date: nil,
+            timeZone: "America/Argentina/Buenos_Aires"
+        )
+
+        #expect(GoogleCalendarEvent.isMidnightToMidnight(start, end) == true)
+    }
+
+    @Test func nonMidnightDateTimesAreNotAllDay() {
+        let start = GCEventDateTime(
+            dateTime: "2026-03-24T00:00:00-03:00",
+            date: nil,
+            timeZone: "America/Argentina/Buenos_Aires"
+        )
+        let end = GCEventDateTime(
+            dateTime: "2026-03-24T10:30:00-03:00",
+            date: nil,
+            timeZone: "America/Argentina/Buenos_Aires"
+        )
+
+        #expect(GoogleCalendarEvent.isMidnightToMidnight(start, end) == false)
+    }
 }

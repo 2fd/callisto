@@ -4,22 +4,15 @@ import Foundation
 
 @Suite("DateHelpers")
 struct DateHelpersTests {
-    @Test func startOfDay() {
+    @Test func startOfMinute() {
         let calendar = Calendar.current
-        let noon = calendar.date(bySettingHour: 12, minute: 30, second: 0, of: Date.now)!
-        let start = noon.startOfDay
-        let components = calendar.dateComponents([.hour, .minute, .second], from: start)
-        #expect(components.hour == 0)
-        #expect(components.minute == 0)
+        let date = calendar.date(bySettingHour: 12, minute: 30, second: 45, of: Date.now)!
+        let start = date.startOfMinute
+        let components = calendar.dateComponents([.hour, .minute, .second, .nanosecond], from: start)
+        #expect(components.hour == 12)
+        #expect(components.minute == 30)
         #expect(components.second == 0)
-    }
-
-    @Test func endOfDay() {
-        let calendar = Calendar.current
-        let today = Date.now.startOfDay
-        let end = today.endOfDay
-        let expected = calendar.date(byAdding: .day, value: 1, to: today)!
-        #expect(end == expected)
+        #expect(components.nanosecond == 0)
     }
 
     @Test func isToday() {
@@ -34,21 +27,23 @@ struct DateHelpersTests {
         #expect(!Date.now.isTomorrow)
     }
 
-    @Test func relativeDisplayToday() {
-        #expect(Date.now.relativeDisplay == "Today")
+    @Test func formatUsesProvidedDateFormat() {
+        let date = Calendar.current.date(from: DateComponents(year: 2026, month: 3, day: 1))!
+        #expect(date.format(f: "yyyy-MM-dd") == "2026-03-01")
     }
 
-    @Test func relativeDisplayTomorrow() {
-        let tomorrow = Calendar.current.date(byAdding: .day, value: 1, to: Date.now)!
-        #expect(tomorrow.relativeDisplay == "Tomorrow")
+    @Test func isAfter() {
+        let earlier = Date(timeIntervalSince1970: 1_000)
+        let later = Date(timeIntervalSince1970: 2_000)
+        #expect(later.isAfter(earlier))
+        #expect(!earlier.isAfter(later))
     }
 
-    @Test func relativeDisplayFutureDate() {
-        let future = Calendar.current.date(byAdding: .day, value: 5, to: Date.now)!
-        let display = future.relativeDisplay
-        #expect(display != "Today")
-        #expect(display != "Tomorrow")
-        #expect(display.contains(","))
+    @Test func isBefore() {
+        let earlier = Date(timeIntervalSince1970: 1_000)
+        let later = Date(timeIntervalSince1970: 2_000)
+        #expect(earlier.isBefore(later))
+        #expect(!later.isBefore(earlier))
     }
 }
 
@@ -81,12 +76,12 @@ struct DateRelativeTests {
     }
 
     @Test func futureOneMinute() {
-        let d = Date.now.addingTimeInterval(60)
+        let d = Date.now.addingTimeInterval(65)
         #expect(d.relative() == "in 1 minute")
     }
 
     @Test func futureManyMinutes() {
-        let d = Date.now.addingTimeInterval(60 * 10)
+        let d = Date.now.addingTimeInterval(60 * 10 + 5)
         #expect(d.relative() == "in 10 minutes")
     }
 

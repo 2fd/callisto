@@ -8,7 +8,6 @@ import SwiftData
 /// app-local ``isVisible`` flag the user toggles in settings.
 @Model
 final class GoogleCalendar {
-    #Unique<GoogleCalendar>([\.calendarId])
 
     // MARK: - Identity
 

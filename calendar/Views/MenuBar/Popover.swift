@@ -11,25 +11,78 @@ struct Popover: View {
     @Environment(\.openWindows) private var openWindows
 
     var body: some View {
-        VStack(spacing: 0) {
-            PopoverHeader(onSettings: { openWindows(.settings) }, onRefresh: {
+        PopoverContent(
+            days: eventManager.iterByDays(userSettings),
+            hasReadableAccounts: !accountManager.iter().filter(\.canRead).isEmpty,
+            maxHeight: (NSScreen.main?.visibleFrame.height ?? 800) * 0.9,
+            onSettings: { openWindows(.settings) },
+            onRefresh: {
                 Task.detached(priority: .background) {
                     await eventManager.sync()
                 }
-            }, isRefreshing: eventManager.isSyncing)
+            },
+            isRefreshing: eventManager.isSyncing
+        )
+    }
+}
+
+/// The renderable surface of the popover, separated from live data for previews.
+struct PopoverContent: View {
+    let days: [EventDay]
+    let hasReadableAccounts: Bool
+    let maxHeight: CGFloat
+    let onSettings: () -> Void
+    let onRefresh: () -> Void
+    let isRefreshing: Bool
+
+    var body: some View {
+        VStack(spacing: 0) {
+            PopoverHeader(
+                onSettings: onSettings,
+                onRefresh: onRefresh,
+                isRefreshing: isRefreshing
+            )
 
             Divider()
                 .padding(.horizontal, 6)
 
-            if accountManager.iter().filter(\.canRead).isEmpty {
-                NoAccountsView(onManageAccount: { openWindows(.settings) })
+            if !hasReadableAccounts {
+                NoAccountsView(onManageAccount: onSettings)
             } else {
-                EventListView(
-                    days: eventManager.iterByDays(userSettings),
-                    maxHeight: (NSScreen.main?.visibleFrame.height ?? 800) * 0.9
-                )
+                EventListView(days: days, maxHeight: maxHeight)
             }
         }
         .frame(width: UI.Width)
     }
 }
+
+#if DEBUG
+private struct PopoverReferencePreview: View {
+    let colorScheme: ColorScheme
+
+    var body: some View {
+        let fixture = EventPreviewFixture.loaded()
+
+        PopoverContent(
+            days: fixture.days,
+            hasReadableAccounts: true,
+            maxHeight: 600,
+            onSettings: {},
+            onRefresh: {},
+            isRefreshing: false
+        )
+        .environment(fixture.eventManager)
+        .environment(fixture.eventManager.accounts)
+        .background(Color(nsColor: .windowBackgroundColor))
+        .preferredColorScheme(colorScheme)
+    }
+}
+
+#Preview("Popover - Dark") {
+    PopoverReferencePreview(colorScheme: .dark)
+}
+
+#Preview("Popover - Light") {
+    PopoverReferencePreview(colorScheme: .light)
+}
+#endif

@@ -1,0 +1,37 @@
+{
+  "branches": ["main"],
+  "plugins": [
+    "@semantic-release/commit-analyzer",
+    "@semantic-release/release-notes-generator",
+    "@semantic-release/changelog",
+    [
+      "@semantic-release/exec",
+      {
+        "verifyConditionsCmd": "for name in GOOGLE_CLIENT_ID DEVELOPER_ID_CERTIFICATE_BASE64 DEVELOPER_ID_CERTIFICATE_PASSWORD APPLE_API_KEY_ID APPLE_API_ISSUER_ID APPLE_API_KEY_P8_BASE64 SPARKLE_PRIVATE_KEY_BASE64; do if [ -z \"$(printenv \"$name\")\" ]; then echo \"Missing required release secret: $name\"; exit 1; fi; done",
+        "prepareCmd": "export RELEASE_VERSION='${nextRelease.version}' && export RELEASE_BUILD_NUMBER='${env.RELEASE_BUILD_NUMBER}' && ./scripts/prepare-release.sh"
+      }
+    ],
+    [
+      "@semantic-release/github",
+      {
+        "assets": [
+          {
+            "path": "dist/Callisto-*.zip",
+            "label": "Callisto macOS App"
+          },
+          {
+            "path": "dist/appcast.xml",
+            "label": "Sparkle Appcast"
+          }
+        ]
+      }
+    ],
+    [
+      "@semantic-release/git",
+      {
+        "assets": ["CHANGELOG.md"],
+        "message": "chore(release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}"
+      }
+    ]
+  ]
+}

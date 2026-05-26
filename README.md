@@ -1,4 +1,4 @@
-# CalendarBar
+# Callisto
 
 A lightweight macOS menu bar app for viewing Google Calendar events.
 
@@ -14,8 +14,8 @@ A lightweight macOS menu bar app for viewing Google Calendar events.
 
 ## Requirements
 
-- macOS 26.2+
-- Xcode 26+
+- macOS 14.0+
+- Xcode 15+
 - A Google Cloud project with OAuth 2.0 credentials (Desktop / Installed app type)
 
 ## Setup
@@ -55,6 +55,21 @@ xcodebuild -scheme calendar -configuration Debug build
 xcodebuild -scheme calendar -configuration Debug test
 
 # The project includes two test targets: calendarTests and calendarUITests
+```
+
+### Nightly local app
+
+Select the shared **calendar Nightly** scheme in Xcode to run a local development copy alongside the regular app. It displays as **Callisto Nightly** and stores credentials in the macOS Keychain separately under its `dev.frami.callisto.nightly` bundle identifier.
+
+Nightly uses Xcode-managed Apple Development signing so its secure Keychain authorization remains stable across rebuilds. Sign into your Apple Developer team in Xcode and allow Xcode to create or download an Apple Development certificate before building Nightly. After switching from an older ad-hoc-signed Nightly build, sign into Google once again so new tokens are stored in the signed app's secure Keychain container.
+
+```bash
+# Build, install to ~/Applications, and launch
+make run
+
+# Or just build/install without launching
+make build
+make install
 ```
 
 ## Architecture
