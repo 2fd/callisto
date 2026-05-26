@@ -27,7 +27,7 @@ jobs:
         run: |
           xcodebuild \
             -project calendar.xcodeproj \
-            -scheme calendar \
+            -scheme callisto \
             -configuration Debug \
             -destination 'platform=macOS' \
             build-for-testing \

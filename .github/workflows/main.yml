@@ -28,7 +28,7 @@ jobs:
         run: |
           xcodebuild \
             -project calendar.xcodeproj \
-            -scheme calendar \
+            -scheme callisto \
             -configuration Debug \
             -destination 'platform=macOS' \
             build-for-testing \
@@ -49,4 +49,4 @@ jobs:
   #     - name: Select Xcode
   #       run: sudo xcode-select -s /Applications/Xcode.app
   #     - name: Build
-  #       run: xcodebuild -scheme calendar -configuration Release build
+  #       run: xcodebuild -scheme callisto -configuration Release build
