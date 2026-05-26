@@ -73,7 +73,7 @@ struct CalendarApp: App {
     }
     .menuBarExtraStyle(.window)
 
-    Window("Callisto Settings", id: AppWindow.settings.rawValue) {
+    Window("\(AppInfo.displayName) Settings", id: AppWindow.settings.rawValue) {
       SettingsWindow()
         .openWindowsAction()
         .environment(eventManager)

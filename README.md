@@ -45,21 +45,21 @@ This value is read at runtime via `Info.plist` → `GOOGLE_CLIENT_ID`.
 open calendar.xcodeproj
 
 # Or build from the command line
-xcodebuild -scheme calendar -configuration Debug build
+xcodebuild -scheme callisto -configuration Debug build
 ```
 
 ### 4. Run tests
 
 ```bash
 # Unit tests
-xcodebuild -scheme calendar -configuration Debug test
+xcodebuild -scheme callisto -configuration Debug test
 
 # The project includes two test targets: calendarTests and calendarUITests
 ```
 
 ### Nightly local app
 
-Select the shared **calendar Nightly** scheme in Xcode to run a local development copy alongside the regular app. It displays as **Callisto Nightly** and stores credentials in the macOS Keychain separately under its `dev.frami.callisto.nightly` bundle identifier.
+Select the shared **nightly** scheme in Xcode to run a local development copy alongside the regular app. It displays as **Callisto Nightly** and stores credentials in the macOS Keychain separately under its `dev.frami.callisto.nightly` bundle identifier.
 
 Nightly uses Xcode-managed Apple Development signing so its secure Keychain authorization remains stable across rebuilds. Sign into your Apple Developer team in Xcode and allow Xcode to create or download an Apple Development certificate before building Nightly. After switching from an older ad-hoc-signed Nightly build, sign into Google once again so new tokens are stored in the signed app's secure Keychain container.
 

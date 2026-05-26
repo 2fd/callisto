@@ -9,7 +9,7 @@ struct UpdatesSettingsSection: View {
     Section("Updates") {
       HStack {
         VStack(alignment: .leading, spacing: 2) {
-          Text("Callisto \(appVersion)")
+          Text("\(AppInfo.displayName) \(appVersion)")
             .font(.body)
           Text("Build \(appBuild)")
             .font(.caption)
