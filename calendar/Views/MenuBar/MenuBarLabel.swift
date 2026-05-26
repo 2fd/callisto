@@ -75,7 +75,9 @@ struct MenuBarEventLabel: View {
 struct MenuBarEventIcon: View {
   let event: GoogleCalendarEvent
   var body: some View {
-    if event.startDate.isBefore(.now) {
+    if event.isOutOfOffice {
+      Image(systemName: "minus.circle.fill")
+    } else if event.startDate.isBefore(.now) {
       ConferenceIconView(event: event)
     } else if event.startDate.isToday {
       let diff = Int(ceil(event.startDate.timeIntervalSince(.now) / 60))
