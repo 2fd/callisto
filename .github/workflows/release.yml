@@ -1,21 +1,8 @@
 name: Release
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - "calendar/**"
-      - "calendarTests/**"
-      - "calendarUITests/**"
-      - "calendar.xcodeproj/**"
-      - "Config.xcconfig.example"
-      - "Info.plist"
-      - "ExportOptions.plist"
-      - "scripts/**"
-      - ".github/workflows/release.yml"
-      - ".releaserc.json"
-      - "package.json"
-      - "pnpm-lock.yaml"
+  release:
+    types: [published]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -39,29 +26,30 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10.32.0
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: "pnpm"
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
       - name: Select Xcode
         run: sudo xcode-select -s /Applications/Xcode.app
 
       - name: Create Config.xcconfig
         run: cp Config.xcconfig.example Config.xcconfig
 
+      - name: Resolve release version
+        env:
+          RELEASE_NAME: ${{ github.event.release.name }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          version="${RELEASE_NAME}"
+          version="${version#v}"
+
+          if ! [[ "${version}" =~ ^[0-9]+[.][0-9]+[.][0-9]+([-.+][0-9A-Za-z.-]+)?$ ]]; then
+            echo "Release name must be a semantic version, got: ${RELEASE_NAME}"
+            exit 1
+          fi
+
+          echo "RELEASE_VERSION=${version}" >> "${GITHUB_ENV}"
+          echo "RELEASE_TAG=${RELEASE_TAG}" >> "${GITHUB_ENV}"
+
       - name: Release
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
           DEVELOPER_ID_CERTIFICATE_BASE64: ${{ secrets.DEVELOPER_ID_CERTIFICATE_BASE64 }}
           DEVELOPER_ID_CERTIFICATE_PASSWORD: ${{ secrets.DEVELOPER_ID_CERTIFICATE_PASSWORD }}
@@ -70,4 +58,9 @@ jobs:
           APPLE_API_KEY_P8_BASE64: ${{ secrets.APPLE_API_KEY_P8_BASE64 }}
           SPARKLE_PRIVATE_KEY_BASE64: ${{ secrets.SPARKLE_PRIVATE_KEY_BASE64 }}
           RELEASE_BUILD_NUMBER: ${{ github.run_number }}
-        run: npx semantic-release
+        run: ./scripts/prepare-release.sh
+
+      - name: Upload release assets
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release upload "${RELEASE_TAG}" "dist/Callisto-${RELEASE_VERSION}.zip" "dist/Callisto-${RELEASE_VERSION}.dmg" "dist/Callisto.dmg" "dist/appcast.xml" --clobber
