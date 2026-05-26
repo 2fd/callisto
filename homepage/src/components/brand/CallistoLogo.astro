@@ -1,0 +1,20 @@
+---
+import CallistoMark from "./CallistoMark.astro";
+
+interface Props {
+  class?: string;
+}
+
+const { class: className } = Astro.props;
+---
+
+<a
+  href="#"
+  class:list={["flex items-center gap-4", className]}
+  aria-label="Callisto Homepage"
+>
+  <CallistoMark class="size-10 text-primary" />
+  <span class="text-base font-medium uppercase tracking-[0.45em] text-light"
+    >Callisto</span
+  >
+</a>

@@ -1,0 +1,75 @@
+---
+import CallistoMark from "@/components/brand/CallistoMark.astro";
+
+interface Props {
+  class?: string;
+}
+
+const { class: className } = Astro.props;
+---
+
+<div
+  class:list={[
+    "relative flex h-[150px] w-full max-w-[470px] items-end justify-center gap-7 pr-2",
+    className,
+  ]}
+>
+  <svg
+    class="absolute left-1/2 top-0 h-[58px] w-[250px] -translate-x-1/2 text-light/45"
+    viewBox="0 0 250 58"
+    fill="none"
+    aria-hidden="true"
+  >
+    <path
+      d="M10 49C50 7 196 5 240 49"
+      stroke="currentColor"
+      stroke-width="1.2"
+      stroke-dasharray="5 7"></path>
+  </svg>
+  <svg
+    class="absolute left-1/2 top-[-8px] size-10 -translate-x-1/2 text-primary"
+    viewBox="0 0 40 32"
+    fill="currentColor"
+    aria-hidden="true"
+  >
+    <path
+      d="M12.5 27h16.8a6.2 6.2 0 0 0 .48-12.38A9.6 9.6 0 0 0 11.2 11.3 7.85 7.85 0 0 0 12.5 27Z"
+    ></path>
+  </svg>
+
+  <div class="relative w-[150px] shrink-0">
+    <div
+      class="relative h-[78px] rounded-xs border-2 border-light/25 bg-night shadow-elevation-2 ring-1 ring-night"
+    >
+      <div
+        class="absolute inset-2 flex items-center justify-center rounded-xs bg-surface/70"
+      >
+        <CallistoMark class="size-10" />
+      </div>
+    </div>
+    <div
+      class="mx-auto h-1.5 w-[168px] -translate-x-2 rounded-b-full bg-light/40"
+    >
+    </div>
+  </div>
+
+  <div
+    class="relative h-[104px] w-[144px] shrink-0 rounded-sm border-2 border-light/35 bg-night p-2 shadow-elevation-2"
+  >
+    <div
+      class="flex size-full items-center justify-center rounded-xs bg-surface/72"
+    >
+      <CallistoMark class="size-12" />
+    </div>
+  </div>
+
+  <div
+    class="relative h-[92px] w-[48px] shrink-0 rounded-sm border-2 border-light/35 bg-night p-1.5 shadow-elevation-2"
+  >
+    <div
+      class="flex size-full items-center justify-center rounded-xs bg-surface/72"
+    >
+      <CallistoMark class="size-7" />
+    </div>
+  </div>
+</div>

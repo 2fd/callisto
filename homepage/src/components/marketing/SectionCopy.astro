@@ -1,0 +1,23 @@
+---
+interface Props {
+  eyebrow: string;
+  heading: string;
+  description: string;
+  class?: string;
+}
+
+const { eyebrow, heading, description, class: className } = Astro.props;
+---
+
+<div class:list={["space-y-3", className]}>
+  <p class="text-xs font-semibold uppercase tracking-[0.25em] text-primary">
+    {eyebrow}
+  </p>
+  <h2
+    class="font-sans text-[2rem] font-medium leading-[1.15] tracking-[-0.035em] text-light md:text-[2.25rem]"
+    set:html={heading}
+  />
+  <p class="max-w-[350px] text-base leading-6 text-light/68">
+    {description}
+  </p>
+</div>

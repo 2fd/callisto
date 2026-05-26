@@ -1,0 +1,16 @@
+---
+interface Props {
+  class?: string;
+}
+
+const { class: className } = Astro.props;
+---
+
+<div
+  class:list={[
+    "flex size-[84px] items-center justify-center rounded-md bg-muted-base/62 shadow-elevation-1 ring-1 ring-foreground/8",
+    className,
+  ]}
+>
+  <slot />
+</div>

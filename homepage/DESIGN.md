@@ -7,14 +7,14 @@
 
 ## Colors
 
-| Token | Hex | Usage |
-|-------|-----|-------|
-| `night` | `#0E0E16` | Darkest background (base) |
-| `surface` | `#171726` | Card and popover surfaces |
-| `muted-base` | `#2B2B3D` | Muted elements, secondary backgrounds, borders |
-| `primary` | `#FFB08A` | Warm peach accent — CTAs, highlights, focus rings |
-| `light` | `#FFF8F4` | Primary foreground text color |
-| `text-muted` | `#A1A1AA` | Secondary text, captions, disabled states |
+| Token        | Hex       | Usage                                             |
+| ------------ | --------- | ------------------------------------------------- |
+| `night`      | `#0E0E16` | Darkest background (base)                         |
+| `surface`    | `#171726` | Card and popover surfaces                         |
+| `muted-base` | `#2B2B3D` | Muted elements, secondary backgrounds, borders    |
+| `primary`    | `#FFB08A` | Warm peach accent — CTAs, highlights, focus rings |
+| `light`      | `#FFF8F4` | Primary foreground text color                     |
+| `text-muted` | `#A1A1AA` | Secondary text, captions, disabled states         |
 
 ### Semantic Mapping
 
@@ -39,15 +39,16 @@
 
 ## Typography
 
-| Token | Family | Size | Line Height | Weight | Usage |
-|-------|--------|------|-------------|--------|-------|
-| `display` | Serif | 48px | 56px | 400 | Hero headlines |
-| `heading` | Serif | 24px | 32px | 400 | Section headings |
-| `body` | Sans | 16px | 24px | 400 | UI text, paragraphs |
-| `small` | Sans | 14px | 20px | 400 | Labels, metadata |
-| `caption` | Sans | 12px | 16px | 400 | Fine print, badges |
+| Token     | Family | Size | Line Height | Weight | Usage               |
+| --------- | ------ | ---- | ----------- | ------ | ------------------- |
+| `display` | Serif  | 48px | 56px        | 400    | Hero headlines      |
+| `heading` | Serif  | 24px | 32px        | 400    | Section headings    |
+| `body`    | Sans   | 16px | 24px        | 400    | UI text, paragraphs |
+| `small`   | Sans   | 14px | 20px        | 400    | Labels, metadata    |
+| `caption` | Sans   | 12px | 16px        | 400    | Fine print, badges  |
 
 ### Font Stacks
+
 - **Sans**: `"Inter Variable", ui-sans-serif, system-ui, sans-serif`
 - **Serif**: `ui-serif, Georgia, Cambria, "Times New Roman", Times, serif`
 - **Display/Heading**: Serif stack
@@ -58,18 +59,18 @@
 
 Based on an **8pt grid**. Use multiples of 8 for consistent spacing and layout rhythm.
 
-| Token | Value | Pixels |
-|-------|-------|--------|
-| `space-1` | 0.25rem | 4px |
-| `space-2` | 0.5rem | 8px |
-| `space-4` | 1rem | 16px |
-| `space-6` | 1.5rem | 24px |
-| `space-8` | 2rem | 32px |
-| `space-10` | 2.5rem | 40px |
-| `space-12` | 3rem | 48px |
-| `space-16` | 4rem | 64px |
-| `space-20` | 5rem | 80px |
-| `space-24` | 6rem | 96px |
+| Token      | Value   | Pixels |
+| ---------- | ------- | ------ |
+| `space-1`  | 0.25rem | 4px    |
+| `space-2`  | 0.5rem  | 8px    |
+| `space-4`  | 1rem    | 16px   |
+| `space-6`  | 1.5rem  | 24px   |
+| `space-8`  | 2rem    | 32px   |
+| `space-10` | 2.5rem  | 40px   |
+| `space-12` | 3rem    | 48px   |
+| `space-16` | 4rem    | 64px   |
+| `space-20` | 5rem    | 80px   |
+| `space-24` | 6rem    | 96px   |
 
 ---
 
@@ -77,12 +78,12 @@ Based on an **8pt grid**. Use multiples of 8 for consistent spacing and layout r
 
 Soft radius creates a calm, modern feel.
 
-| Token | Value |
-|-------|-------|
-| `radius-xs` | 4px |
-| `radius-sm` | 8px |
-| `radius-md` | 12px |
-| `radius-lg` | 16px |
+| Token       | Value |
+| ----------- | ----- |
+| `radius-xs` | 4px   |
+| `radius-sm` | 8px   |
+| `radius-md` | 12px  |
+| `radius-lg` | 16px  |
 
 ---
 
@@ -90,11 +91,11 @@ Soft radius creates a calm, modern feel.
 
 Subtle elevation for the dark theme. Levels build cumulative depth.
 
-| Token | Shadow |
-|-------|--------|
-| `elevation-0` | `none` |
-| `elevation-1` | `0 1px 2px 0 rgb(0 0 0 / 0.15), 0 1px 3px 0 rgb(0 0 0 / 0.1)` |
-| `elevation-2` | `0 4px 6px -1px rgb(0 0 0 / 0.2), 0 2px 4px -2px rgb(0 0 0 / 0.15)` |
+| Token         | Shadow                                                                |
+| ------------- | --------------------------------------------------------------------- |
+| `elevation-0` | `none`                                                                |
+| `elevation-1` | `0 1px 2px 0 rgb(0 0 0 / 0.15), 0 1px 3px 0 rgb(0 0 0 / 0.1)`         |
+| `elevation-2` | `0 4px 6px -1px rgb(0 0 0 / 0.2), 0 2px 4px -2px rgb(0 0 0 / 0.15)`   |
 | `elevation-3` | `0 10px 15px -3px rgb(0 0 0 / 0.25), 0 4px 6px -4px rgb(0 0 0 / 0.2)` |
 
 ---
@@ -103,12 +104,12 @@ Subtle elevation for the dark theme. Levels build cumulative depth.
 
 Smooth, subtle transitions that support focus and clarity.
 
-| Token | Duration | Easing | Usage |
-|-------|----------|--------|-------|
-| `duration-hover` | 150ms | ease-out | Button states, link hover |
-| `duration-fade` | 200ms | ease-in-out | Opacity transitions, overlays |
-| `duration-scale` | 200ms | ease-out | Press/active scale feedback |
-| `duration-slide` | 300ms | ease-out | Drawer, panel, toast entrance |
+| Token            | Duration | Easing      | Usage                         |
+| ---------------- | -------- | ----------- | ----------------------------- |
+| `duration-hover` | 150ms    | ease-out    | Button states, link hover     |
+| `duration-fade`  | 200ms    | ease-in-out | Opacity transitions, overlays |
+| `duration-scale` | 200ms    | ease-out    | Press/active scale feedback   |
+| `duration-slide` | 300ms    | ease-out    | Drawer, panel, toast entrance |
 
 ---
 
@@ -116,11 +117,11 @@ Smooth, subtle transitions that support focus and clarity.
 
 ### Button
 
-| Variant | Background | Border | Text | Hover | Pressed |
-|---------|------------|--------|------|-------|---------|
-| Primary | `primary` | transparent | `primary-foreground` | darken 10% | darken 15% |
-| Secondary | transparent | `primary` | `primary` | `primary` at 10% | `primary` at 20% |
-| Text | transparent | transparent | `primary` | underline | — |
+| Variant   | Background  | Border      | Text                 | Hover            | Pressed          |
+| --------- | ----------- | ----------- | -------------------- | ---------------- | ---------------- |
+| Primary   | `primary`   | transparent | `primary-foreground` | darken 10%       | darken 15%       |
+| Secondary | transparent | `primary`   | `primary`            | `primary` at 10% | `primary` at 20% |
+| Text      | transparent | transparent | `primary`            | underline        | —                |
 
 - Border radius: `radius-md` (12px)
 - Height (default): 40px

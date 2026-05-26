@@ -11,7 +11,7 @@ A fast, static marketing homepage built with Astro and deployed to Cloudflare Wo
 - **UI Components:** shadcn/ui-style Astro components using `class-variance-authority`
 - **Typography:** Inter Variable (sans), system serif stack
 - **Deployment:** Cloudflare Workers via `@astrojs/cloudflare` adapter + Wrangler
-- **Tooling:** Oxc (oxlint, oxfmt)
+- **Tooling:** Prettier, ESLint
 - **Node:** >= 22.12.0
 
 ## Architecture
@@ -47,26 +47,26 @@ homepage/
 
 ### Colors
 
-| Token | Hex |
-|-------|-----|
-| `night` | `#0E0E16` |
-| `surface` | `#171726` |
+| Token        | Hex       |
+| ------------ | --------- |
+| `night`      | `#0E0E16` |
+| `surface`    | `#171726` |
 | `muted-base` | `#2B2B3D` |
-| `primary` | `#FFB08A` |
-| `light` | `#FFF8F4` |
+| `primary`    | `#FFB08A` |
+| `light`      | `#FFF8F4` |
 | `text-muted` | `#A1A1AA` |
 
 Semantic CSS variables: `background`, `foreground`, `card`, `primary`, `secondary`, `muted`, `border`, `ring`, etc. All defined in `::root` in `global.css`.
 
 ### Typography
 
-| Token | Family | Size | Usage |
-|-------|--------|------|-------|
-| `display` | Serif | 48px | Hero headlines |
-| `heading` | Serif | 24px | Section headings |
-| `body` | Sans | 16px | UI text, paragraphs |
-| `small` | Sans | 14px | Labels, metadata |
-| `caption` | Sans | 12px | Badges, fine print |
+| Token     | Family | Size | Usage               |
+| --------- | ------ | ---- | ------------------- |
+| `display` | Serif  | 48px | Hero headlines      |
+| `heading` | Serif  | 24px | Section headings    |
+| `body`    | Sans   | 16px | UI text, paragraphs |
+| `small`   | Sans   | 14px | Labels, metadata    |
+| `caption` | Sans   | 12px | Badges, fine print  |
 
 ### Spacing
 
@@ -75,6 +75,7 @@ Semantic CSS variables: `background`, `foreground`, `card`, `primary`, `secondar
 ### Elevation & Motion
 
 Shadows and durations defined as CSS custom properties in `@theme inline`:
+
 - `shadow-elevation-1` through `shadow-elevation-3`
 - `duration-hover` (150ms), `duration-fade` (200ms), `duration-scale` (200ms), `duration-slide` (300ms)
 

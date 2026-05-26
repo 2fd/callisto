@@ -31,12 +31,12 @@
   --radius-4xl: 1rem;
 
   /* Colors */
-  --color-night: #0E0E16;
+  --color-night: #0e0e16;
   --color-surface: #171726;
-  --color-muted-base: #2B2B3D;
-  --color-primary: #FFB08A;
-  --color-light: #FFF8F4;
-  --color-text-muted: #A1A1AA;
+  --color-muted-base: #2b2b3d;
+  --color-primary: #ffb08a;
+  --color-light: #fff8f4;
+  --color-text-muted: #a1a1aa;
 
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -58,9 +58,12 @@
 
   /* Elevation (dark theme shadows) */
   --shadow-elevation-0: 0 0 0 0 rgb(0 0 0 / 0);
-  --shadow-elevation-1: 0 1px 2px 0 rgb(0 0 0 / 0.15), 0 1px 3px 0 rgb(0 0 0 / 0.1);
-  --shadow-elevation-2: 0 4px 6px -1px rgb(0 0 0 / 0.2), 0 2px 4px -2px rgb(0 0 0 / 0.15);
-  --shadow-elevation-3: 0 10px 15px -3px rgb(0 0 0 / 0.25), 0 4px 6px -4px rgb(0 0 0 / 0.2);
+  --shadow-elevation-1:
+    0 1px 2px 0 rgb(0 0 0 / 0.15), 0 1px 3px 0 rgb(0 0 0 / 0.1);
+  --shadow-elevation-2:
+    0 4px 6px -1px rgb(0 0 0 / 0.2), 0 2px 4px -2px rgb(0 0 0 / 0.15);
+  --shadow-elevation-3:
+    0 10px 15px -3px rgb(0 0 0 / 0.25), 0 4px 6px -4px rgb(0 0 0 / 0.2);
 
   /* Motion */
   --duration-hover: 150ms;
@@ -87,38 +90,38 @@
 }
 
 :root {
-  --background: #0E0E16;
-  --foreground: #FFF8F4;
+  --background: #0e0e16;
+  --foreground: #fff8f4;
   --card: #171726;
-  --card-foreground: #FFF8F4;
+  --card-foreground: #fff8f4;
   --popover: #171726;
-  --popover-foreground: #FFF8F4;
-  --primary: #FFB08A;
-  --primary-foreground: #0E0E16;
-  --secondary: #2B2B3D;
-  --secondary-foreground: #FFF8F4;
-  --muted: #2B2B3D;
-  --muted-foreground: #A1A1AA;
-  --accent: #2B2B3D;
-  --accent-foreground: #FFF8F4;
-  --destructive: #FF6B6B;
-  --border: #FFF8F4 / 10%;
-  --input: #FFF8F4 / 15%;
-  --ring: #FFB08A;
+  --popover-foreground: #fff8f4;
+  --primary: #ffb08a;
+  --primary-foreground: #0e0e16;
+  --secondary: #2b2b3d;
+  --secondary-foreground: #fff8f4;
+  --muted: #2b2b3d;
+  --muted-foreground: #a1a1aa;
+  --accent: #2b2b3d;
+  --accent-foreground: #fff8f4;
+  --destructive: #ff6b6b;
+  --border: #fff8f4 / 10%;
+  --input: #fff8f4 / 15%;
+  --ring: #ffb08a;
   --radius: 0.75rem;
-  --chart-1: #FFB08A;
-  --chart-2: #A1A1AA;
-  --chart-3: #2B2B3D;
+  --chart-1: #ffb08a;
+  --chart-2: #a1a1aa;
+  --chart-3: #2b2b3d;
   --chart-4: #171726;
-  --chart-5: #0E0E16;
+  --chart-5: #0e0e16;
   --sidebar: #171726;
-  --sidebar-foreground: #FFF8F4;
-  --sidebar-primary: #FFB08A;
-  --sidebar-primary-foreground: #0E0E16;
-  --sidebar-accent: #2B2B3D;
-  --sidebar-accent-foreground: #FFF8F4;
-  --sidebar-border: #FFF8F4 / 10%;
-  --sidebar-ring: #FFB08A;
+  --sidebar-foreground: #fff8f4;
+  --sidebar-primary: #ffb08a;
+  --sidebar-primary-foreground: #0e0e16;
+  --sidebar-accent: #2b2b3d;
+  --sidebar-accent-foreground: #fff8f4;
+  --sidebar-border: #fff8f4 / 10%;
+  --sidebar-ring: #ffb08a;
 }
 
 @layer base {
@@ -131,7 +134,26 @@
   html {
     @apply font-sans;
   }
-  h1, h2, h3, h4, h5, h6 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     @apply font-serif;
   }
+}
+
+@keyframes jupiter {
+  from {
+    top: 0px;
+  }
+  to {
+    top: -400px;
+  }
+}
+
+.jupiter {
+  animation: jupiter linear;
+  animation-timeline: scroll();
 }
