@@ -24,11 +24,17 @@ jobs:
         run: cp Config.xcconfig.example Config.xcconfig
 
       - name: Run tests
-        run: >
-          xcodebuild
-            -scheme calendar
-            -configuration Debug test
-            -destination 'platform=macOS'
-            CODE_SIGN_IDENTITY=""
-            CODE_SIGNING_REQUIRED=NO
-            CODE_SIGNING_ALLOWED=NO
+        run: |
+          xcodebuild \
+            -project calendar.xcodeproj \
+            -scheme calendar \
+            -configuration Debug \
+            -destination 'platform=macOS' \
+            build-for-testing \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGN_STYLE=Manual \
+            DEVELOPMENT_TEAM="" \
+            PROVISIONING_PROFILE_SPECIFIER="" \
+            CODE_SIGN_ENTITLEMENTS=""
