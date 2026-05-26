@@ -39,16 +39,43 @@ const buttonVariants = cva(
 
 interface Props extends VariantProps<typeof buttonVariants> {
   class?: string;
+  href?: string;
+  target?: string;
+  rel?: string;
+  download?: string | boolean;
+  "aria-label"?: string;
 }
 
-const { class: className, variant = "default", size = "default" } = Astro.props;
+const {
+  class: className,
+  variant = "default",
+  size = "default",
+  href,
+  ...attrs
+} = Astro.props;
 ---
 
-<button
-  data-slot="button"
-  data-variant={variant}
-  data-size={size}
-  class={cn(buttonVariants({ variant, size, className }))}
->
-  <slot />
-</button>
+{
+  href ? (
+    <a
+      href={href}
+      data-slot="button"
+      data-variant={variant}
+      data-size={size}
+      class={cn(buttonVariants({ variant, size, className }))}
+      {...attrs}
+    >
+      <slot />
+    </a>
+  ) : (
+    <button
+      data-slot="button"
+      data-variant={variant}
+      data-size={size}
+      class={cn(buttonVariants({ variant, size, className }))}
+      {...attrs}
+    >
+      <slot />
+    </button>
+  )
+}

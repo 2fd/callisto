@@ -22,9 +22,18 @@ interface Props {
 }
 
 const { size = "lg", class: className, variant = "default" } = Astro.props;
+
+const downloadUrl =
+  "https://github.com/2fd/callisto/releases/latest/download/Callisto.dmg";
 ---
 
-<Button size={size} class={className} variant={variant}>
+<Button
+  href={downloadUrl}
+  size={size}
+  class={className}
+  variant={variant}
+  aria-label="Download Callisto for macOS"
+>
   <span>Download for macOS</span>
   <svg
     xmlns="http://www.w3.org/2000/svg"

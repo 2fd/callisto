@@ -3,11 +3,12 @@ set -euo pipefail
 
 # prepare-release.sh
 # Builds, signs, notarizes, packages, and generates Sparkle appcast for Callisto.
-# Intended to be invoked by semantic-release exec plugin during the prepare phase.
+# Intended to be invoked by the GitHub Release workflow.
 #
 # Required environment variables:
 #   RELEASE_VERSION         - semantic version (e.g. 1.2.3)
 #   RELEASE_BUILD_NUMBER    - monotonic build number (e.g. GitHub run number)
+#   RELEASE_TAG             - GitHub release tag (defaults to v${RELEASE_VERSION})
 #   GOOGLE_CLIENT_ID        - Google OAuth client ID
 #   DEVELOPER_ID_CERTIFICATE_BASE64 - Base64-encoded .p12 Developer ID certificate
 #   DEVELOPER_ID_CERTIFICATE_PASSWORD - Password for the .p12
@@ -18,6 +19,7 @@ set -euo pipefail
 
 RELEASE_VERSION="${RELEASE_VERSION:-$(cat .version 2>/dev/null || echo '1.0.0')}"
 RELEASE_BUILD_NUMBER="${RELEASE_BUILD_NUMBER:-${GITHUB_RUN_NUMBER:-1}}"
+RELEASE_TAG="${RELEASE_TAG:-v${RELEASE_VERSION}}"
 
 echo "=== Preparing release ${RELEASE_VERSION} (build ${RELEASE_BUILD_NUMBER}) ==="
 
@@ -31,7 +33,7 @@ SPARKLE_VERSION="2.9.1"
 SPARKLE_DIR="build/sparkle"
 TEAM_ID="489WB5L6KD"
 CODE_SIGN_DETAILS_PATH="build/codesign-details.txt"
-EXPECTED_ZIP_URL="https://github.com/${GITHUB_REPOSITORY}/releases/download/v${RELEASE_VERSION}/Callisto-${RELEASE_VERSION}.zip"
+EXPECTED_ZIP_URL="https://github.com/${GITHUB_REPOSITORY}/releases/download/${RELEASE_TAG}/Callisto-${RELEASE_VERSION}.zip"
 
 mkdir -p "${DIST_DIR}" "${EXPORT_PATH}"
 
@@ -103,6 +105,8 @@ echo "=== Preparing notarization ==="
 echo "${APPLE_API_KEY_P8_BASE64}" | base64 -d > "${RUNNER_TEMP}/AuthKey.p8"
 
 ZIP_PATH="${DIST_DIR}/Callisto-${RELEASE_VERSION}.zip"
+DMG_PATH="${DIST_DIR}/Callisto-${RELEASE_VERSION}.dmg"
+DMG_DOWNLOAD_PATH="${DIST_DIR}/Callisto.dmg"
 
 # Package for notarization (must preserve symlinks/extended attrs)
 echo "=== Packaging for notarization ==="
@@ -138,8 +142,8 @@ echo "${SPARKLE_PRIVATE_KEY_BASE64}" | base64 -d > "${RUNNER_TEMP}/sparkle_priva
 
 "${SPARKLE_DIR}/bin/generate_appcast" \
   --ed-key-file "${RUNNER_TEMP}/sparkle_private.key" \
-  --download-url-prefix "https://github.com/${GITHUB_REPOSITORY}/releases/download/v${RELEASE_VERSION}/" \
-  --link "https://github.com/${GITHUB_REPOSITORY}/releases/tag/v${RELEASE_VERSION}" \
+  --download-url-prefix "https://github.com/${GITHUB_REPOSITORY}/releases/download/${RELEASE_TAG}/" \
+  --link "https://github.com/${GITHUB_REPOSITORY}/releases/tag/${RELEASE_TAG}" \
   --maximum-deltas 0 \
   "${DIST_DIR}"
 
@@ -148,7 +152,34 @@ if [ -f "appcast.xml" ]; then
   mv appcast.xml "${DIST_DIR}/appcast.xml"
 fi
 
-# --- 11. Final validation ---
+# --- 11. Create DMG for first-time installs ---
+echo "=== Creating DMG ==="
+DMG_SOURCE_DIR="${RUNNER_TEMP}/Callisto-dmg"
+mkdir -p "${DMG_SOURCE_DIR}"
+ditto "${APP_PATH}" "${DMG_SOURCE_DIR}/${APP_NAME}"
+ln -sf /Applications "${DMG_SOURCE_DIR}/Applications"
+
+hdiutil create \
+  -volname "Callisto" \
+  -srcfolder "${DMG_SOURCE_DIR}" \
+  -ov \
+  -format UDZO \
+  "${DMG_PATH}"
+
+echo "=== Notarizing DMG ==="
+xcrun notarytool submit "${DMG_PATH}" \
+  --key-id "${APPLE_API_KEY_ID}" \
+  --issuer "${APPLE_API_ISSUER_ID}" \
+  --key "${RUNNER_TEMP}/AuthKey.p8" \
+  --wait \
+  --timeout 20m
+
+xcrun stapler staple "${DMG_PATH}"
+xcrun stapler validate "${DMG_PATH}"
+hdiutil verify "${DMG_PATH}"
+cp "${DMG_PATH}" "${DMG_DOWNLOAD_PATH}"
+
+# --- 12. Final validation ---
 echo "=== Final validation ==="
 ls -la "${DIST_DIR}"
 
@@ -161,6 +192,14 @@ fi
 # Verify zip exists and is non-empty
 if [ ! -s "${ZIP_PATH}" ]; then
   echo "ERROR: Release zip is missing or empty"
+  exit 1
+fi
+if [ ! -s "${DMG_PATH}" ]; then
+  echo "ERROR: Release DMG is missing or empty"
+  exit 1
+fi
+if [ ! -s "${DMG_DOWNLOAD_PATH}" ]; then
+  echo "ERROR: Direct download DMG is missing or empty"
   exit 1
 fi
 
