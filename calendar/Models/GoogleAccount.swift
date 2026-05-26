@@ -1,7 +1,7 @@
 import Foundation
 import SwiftData
 
-/// A Google account linked to CalendarBar.
+/// A Google account linked to Callisto.
 ///
 /// Each account maps to a single Google identity. OAuth tokens are stored
 /// separately in the macOS Keychain, keyed by ``accountId``.
@@ -9,7 +9,6 @@ import SwiftData
 /// - Important: Never persist OAuth tokens in SwiftData. Use ``KeychainService`` instead.
 @Model
 final class GoogleAccount {
-    #Unique<GoogleAccount>([\.accountId])
 
     /// Google user ID (`sub` claim from the OpenID Connect response).
     @Attribute(.unique) var accountId: String

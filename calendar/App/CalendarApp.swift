@@ -3,7 +3,7 @@ import SwiftData
 import SwiftUI
 import os
 
-/// Entry point for CalendarBar — menu bar only, no Dock icon, no main window.
+/// Entry point for Callisto — menu bar only, no Dock icon, no main window.
 ///
 /// Constructs a single ``GoogleCalendarEventManager`` which owns the account
 /// and calendar managers it depends on. The trio is injected into the SwiftUI
@@ -16,6 +16,7 @@ struct CalendarApp: App {
   @State private var syncScheduler = SyncScheduler()
   @State private var minuteTicker = MinuteScheduler()
   @State private var rightClick = MenuBarRightClick()
+  @State private var appUpdater = AppUpdater()
 
   private let container: ModelContainer
 
@@ -72,7 +73,7 @@ struct CalendarApp: App {
     }
     .menuBarExtraStyle(.window)
 
-    Window("CalendarBar Settings", id: AppWindow.settings.rawValue) {
+    Window("Callisto Settings", id: AppWindow.settings.rawValue) {
       SettingsWindow()
         .openWindowsAction()
         .environment(eventManager)
@@ -80,9 +81,10 @@ struct CalendarApp: App {
         .environment(eventManager.calendars)
         .environment(userSettings)
         .environment(minuteTicker)
+        .environment(appUpdater)
         .modelContainer(container)
     }
-    .windowIdealSize(.fitToContent)
+    .windowResizability(.contentSize)
     .defaultPosition(.center)
   }
 

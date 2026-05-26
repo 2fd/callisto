@@ -11,6 +11,20 @@ import Security
 nonisolated enum KeychainService {
     private static let service = Bundle.main.bundleIdentifier ?? Constants.subsystem
 
+    private static func query(for accountId: String) -> [String: Any] {
+        var query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: service,
+            kSecAttrAccount as String: accountId,
+        ]
+
+        // The Data Protection keychain requires the signed app's access-group entitlement.
+        query[kSecAttrAccessible as String] = kSecAttrAccessibleWhenUnlocked
+        query[kSecUseDataProtectionKeychain as String] = true
+
+        return query
+    }
+
     /// Saves tokens to the Keychain. Automatically updates if an entry already exists.
     /// - Parameters:
     ///   - tokens: The OAuth tokens to store.
@@ -21,14 +35,8 @@ nonisolated enum KeychainService {
             throw KeychainError.encodingFailed
         }
 
-        let query: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: service,
-            kSecAttrAccount as String: accountId,
-            kSecAttrAccessible as String: kSecAttrAccessibleWhenUnlocked,
-            kSecUseDataProtectionKeychain as String: true,
-            kSecValueData as String: data,
-        ]
+        var query = query(for: accountId)
+        query[kSecValueData as String] = data
 
         let status = SecItemAdd(query as CFDictionary, nil)
 
@@ -48,15 +56,9 @@ nonisolated enum KeychainService {
     /// - Returns: The stored ``OAuthTokens``.
     /// - Throws: ``KeychainError/itemNotFound`` if no entry exists, or another ``KeychainError``.
     static func load(for accountId: String) throws -> OAuthTokens {
-        let query: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: service,
-            kSecAttrAccount as String: accountId,
-            kSecAttrAccessible as String: kSecAttrAccessibleWhenUnlocked,
-            kSecUseDataProtectionKeychain as String: true,
-            kSecReturnData as String: true,
-            kSecMatchLimit as String: kSecMatchLimitOne,
-        ]
+        var query = query(for: accountId)
+        query[kSecReturnData as String] = true
+        query[kSecMatchLimit as String] = kSecMatchLimitOne
 
         var result: AnyObject?
         let status = SecItemCopyMatching(query as CFDictionary, &result)
@@ -89,13 +91,7 @@ nonisolated enum KeychainService {
             throw KeychainError.encodingFailed
         }
 
-        let query: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: service,
-            kSecAttrAccount as String: accountId,
-            kSecAttrAccessible as String: kSecAttrAccessibleWhenUnlocked,
-            kSecUseDataProtectionKeychain as String: true,
-        ]
+        let query = query(for: accountId)
 
         let attributes: [String: Any] = [
             kSecValueData as String: data,
@@ -118,13 +114,7 @@ nonisolated enum KeychainService {
     /// - Parameter accountId: The Google account ID.
     /// - Throws: ``KeychainError`` if the deletion fails for an unexpected reason.
     static func delete(for accountId: String) throws {
-        let query: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: service,
-            kSecAttrAccount as String: accountId,
-            kSecAttrAccessible as String: kSecAttrAccessibleWhenUnlocked,
-            kSecUseDataProtectionKeychain as String: true,
-        ]
+        let query = query(for: accountId)
 
         let status = SecItemDelete(query as CFDictionary)
 

@@ -7,5 +7,5 @@ import os
 //
 
 extension Logger {
-    static let shared = Logger(subsystem: Constants.subsystem, category: "App")
+    nonisolated static let shared = Logger(subsystem: Constants.subsystem, category: "App")
 }
