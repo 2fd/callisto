@@ -1,0 +1,245 @@
+---
+import MarketingLayout from "@/layouts/MarketingLayout.astro";
+import SiteHeader from "@/components/marketing/SiteHeader.astro";
+import HeroSection from "@/components/marketing/HeroSection.astro";
+import DownloadButton from "@/components/marketing/DownloadButton.astro";
+import FeatureSection from "@/components/marketing/FeatureSection.astro";
+import FeatureIconTile from "@/components/marketing/FeatureIconTile.astro";
+import SectionCopy from "@/components/marketing/SectionCopy.astro";
+import ReminderPreview from "@/components/marketing/ReminderPreview.astro";
+import FocusPreview from "@/components/marketing/FocusPreview.astro";
+import WeekCalendarPreview from "@/components/marketing/WeekCalendarPreview.astro";
+import SyncDevicesPreview from "@/components/marketing/SyncDevicesPreview.astro";
+import CallistoMark from "@/components/brand/CallistoMark.astro";
+import jupiterVideo from "@/assets/jupiter.mp4";
+import { MousePointerClick } from "@lucide/astro";
+---
+
+<MarketingLayout>
+  <Fragment slot="fixed-background"> </Fragment>
+  <video
+    class="fixed left-1/2 h-250 w-250 object-cover opacity-75 jupiter"
+    src={jupiterVideo}
+    autoplay
+    muted
+    loop
+    playsinline></video>
+  <div
+    class="pointer-events-none fixed left-1/2 h-250 w-250 bg-[radial-gradient(circle,transparent_35%,#0e0e16_85%)] jupiter"
+  >
+  </div>
+  <div
+    class="pointer-events-none fixed left-1/2 h-250 w-250 bg-[radial-gradient(farthest-corner_at_0_25%,transparent_35%,#0e0e16_60%)] jupiter"
+  >
+  </div>
+
+  <Fragment slot="hero">
+    <!-- Hero -->
+    <section class="relative mx-auto w-full max-w-360">
+      <SiteHeader />
+      <HeroSection>
+        <Fragment slot="copy">
+          <div>
+            <h1
+              class="mb-8 font-sans text-[2.7rem] font-medium leading-[1.12] tracking-[-0.045em] text-light md:text-[3.55rem] lg:text-[3.75rem]"
+            >
+              <span>Menu Bar Calendar</span><br />
+              <span class="text-primary">optimized for meetings</span>
+            </h1>
+            <p class="max-w-98 text-base leading-7 text-light/72">
+              Callisto gives you direct access to all your meetings in the most
+              convenient way.
+            </p>
+          </div>
+        </Fragment>
+
+        <Fragment slot="actions">
+          <DownloadButton class="rounded-sm px-6 shadow-elevation-2" />
+          <a
+            href="#features"
+            class="group inline-flex items-center gap-3 text-sm font-medium text-light/90 transition-colors duration-hover hover:text-primary"
+          >
+            <span>Learn more</span>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="size-4 transition-transform duration-hover group-hover:translate-y-0.5"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+              ><polyline points="6 9 12 15 18 9"></polyline></svg
+            >
+          </a>
+        </Fragment>
+
+        <Fragment slot="visual">
+          <!-- <HeroCalendarPreview /> -->
+        </Fragment>
+      </HeroSection>
+    </section>
+  </Fragment>
+
+  <!-- Features -->
+  <div id="features" class="flex flex-col gap-3 relative z-50">
+    <!-- Smart Reminders -->
+    <FeatureSection
+      gradientClass="inset-0 bg-[radial-gradient(circle_at_85%_50%,rgba(255,176,138,0.08),transparent_30%)]"
+    >
+      <FeatureIconTile slot="icon">
+        <MousePointerClick class="size-12 text-primary" />
+      </FeatureIconTile>
+
+      <SectionCopy
+        slot="copy"
+        eyebrow="Direct access"
+        heading="One click away form your meetings"
+        description="Luna helps you start your day with clarity. Smart reminders and time awareness keep you focused without the noise."
+      />
+
+      <div slot="visual" class="flex justify-start lg:justify-end">
+        <ReminderPreview />
+      </div>
+    </FeatureSection>
+
+    <!-- Focus Sessions -->
+    <FeatureSection
+      surface="muted"
+      gradientClass="inset-y-0 right-0 w-1/2 bg-[radial-gradient(circle_at_52%_50%,rgba(255,176,138,0.08),transparent_42%)]"
+    >
+      <FeatureIconTile slot="icon">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          class="size-12"
+          viewBox="0 0 24 24"
+          fill="#FFB08A"
+          aria-hidden="true"
+        >
+          <path d="M13.7 2.7 4 14h7.2l-.9 7.3L20 10h-7.2l.9-7.3Z"></path>
+        </svg>
+      </FeatureIconTile>
+
+      <SectionCopy
+        slot="copy"
+        eyebrow="Quick Actions"
+        heading=""
+        description="Block distractions and protect your most important work with Focus Sessions. You set the time, Luna holds the line."
+      />
+
+      <div slot="visual" class="flex justify-start lg:justify-center">
+        <FocusPreview />
+      </div>
+    </FeatureSection>
+
+    <!-- Calendar View -->
+    <FeatureSection
+      id="design"
+      gradientClass="inset-0 bg-[radial-gradient(circle_at_70%_45%,rgba(43,43,61,0.32),transparent_35%)]"
+    >
+      <FeatureIconTile slot="icon">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          class="size-12"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="#FFB08A"
+          stroke-width="1.35"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <circle cx="12" cy="12" r="9"></circle>
+          <circle cx="12" cy="12" r="5.3"></circle>
+          <circle cx="12" cy="12" r="2.2" fill="#FFB08A"></circle>
+        </svg>
+      </FeatureIconTile>
+
+      <SectionCopy
+        slot="copy"
+        eyebrow="See your day"
+        heading="A calendar that puts<br />your day in focus"
+        description="Luna's calendar view is designed for how you actually work. Clean, minimal, and built for day-to-day meetings."
+      />
+
+      <div slot="visual" class="flex justify-start lg:justify-end">
+        <WeekCalendarPreview />
+      </div>
+    </FeatureSection>
+
+    <!-- Sync -->
+    <FeatureSection
+      surface="muted"
+      gradientClass="inset-y-0 right-0 w-1/2 bg-[radial-gradient(circle_at_50%_45%,rgba(255,176,138,0.07),transparent_40%)]"
+    >
+      <FeatureIconTile slot="icon">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          class="size-12"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="#FFB08A"
+          stroke-width="1.35"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <path
+            d="M6 18.5h11.2a4 4 0 0 0 .55-7.97A6.2 6.2 0 0 0 6.1 8.22 4.9 4.9 0 0 0 6 18.5Z"
+          ></path>
+        </svg>
+      </FeatureIconTile>
+
+      <SectionCopy
+        slot="copy"
+        eyebrow="Always in sync"
+        heading="Seamless across<br />your devices"
+        description="Luna syncs effortlessly with iCloud, so your schedule is always up to date wherever you are."
+      />
+
+      <div slot="visual" class="flex justify-start lg:justify-end">
+        <SyncDevicesPreview />
+      </div>
+    </FeatureSection>
+  </div>
+
+  <!-- Footer -->
+  <footer
+    id="pricing"
+    aria-labelledby="footer-heading"
+    class="relative mt-16 mb-24 overflow-hidden rounded-lg border border-primary/10 bg-surface/55 shadow-elevation-2 ring-1 ring-foreground/[0.035]"
+  >
+    <div
+      class="absolute inset-0 bg-[radial-gradient(circle_at_12%_50%,rgba(255,176,138,0.12),transparent_28%),radial-gradient(circle_at_86%_50%,rgba(255,176,138,0.08),transparent_30%)]"
+    >
+    </div>
+    <div
+      class="relative grid items-center gap-8 px-8 py-8 text-center md:grid-cols-[72px_minmax(0,1fr)_minmax(240px,auto)] md:px-16 md:text-left lg:px-[88px]"
+    >
+      <div class="flex justify-center md:justify-start">
+        <CallistoMark size="lg" class="size-16" />
+      </div>
+
+      <div>
+        <h2
+          id="footer-heading"
+          class="font-sans text-2xl font-medium tracking-[-0.03em] text-light md:text-3xl"
+        >
+          Ready to take control of your day?
+        </h2>
+        <p class="mt-2 max-w-[500px] text-base leading-6 text-light/66">
+          Download Luna for macOS and experience a calmer, more focused way to
+          work.
+        </p>
+      </div>
+
+      <div class="md:justify-self-end">
+        <DownloadButton
+          class="w-full min-w-[240px] rounded-sm px-8 shadow-elevation-2 md:w-auto"
+        />
+        <p class="mt-3 text-xs text-light/48">macOS 14.0 or later</p>
+      </div>
+    </div>
+  </footer>
+</MarketingLayout>

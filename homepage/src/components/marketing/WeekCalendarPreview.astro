@@ -1,0 +1,95 @@
+---
+interface CalendarDay {
+  day: string;
+  date: string;
+  active?: boolean;
+  bars: { width?: string; color: string }[];
+}
+
+interface Props {
+  days?: CalendarDay[];
+  class?: string;
+}
+
+const defaultDays: CalendarDay[] = [
+  {
+    day: "Mon",
+    date: "24",
+    active: true,
+    bars: [
+      { color: "bg-light/42" },
+      { color: "bg-primary/75" },
+      { color: "bg-primary/85", width: "w-3/4" },
+    ],
+  },
+  {
+    day: "Tue",
+    date: "25",
+    bars: [{ color: "bg-primary/75" }, { color: "bg-[#a38ad0]/70" }],
+  },
+  {
+    day: "Wed",
+    date: "26",
+    bars: [{ color: "bg-light/22" }, { color: "bg-light/34" }],
+  },
+  {
+    day: "Thu",
+    date: "27",
+    bars: [
+      { color: "bg-light/22" },
+      { color: "bg-[#c65aa8]/70" },
+      { color: "bg-light/25" },
+    ],
+  },
+  {
+    day: "Fri",
+    date: "28",
+    bars: [{ color: "bg-light/42" }, { color: "bg-light/18" }],
+  },
+];
+
+const { days = defaultDays, class: className } = Astro.props;
+---
+
+<div
+  class:list={[
+    "w-full max-w-[450px] overflow-hidden rounded-sm bg-light/[0.07] p-2 shadow-elevation-2 ring-1 ring-foreground/[0.07]",
+    className,
+  ]}
+>
+  <div class="grid grid-cols-5 gap-2">
+    {
+      days.map((day) => (
+        <div
+          class:list={[
+            "rounded-sm p-2.5",
+            day.active ? "border border-primary bg-night/35" : "bg-night/22",
+          ]}
+        >
+          <p
+            class:list={[
+              "text-center text-[0.62rem] font-semibold uppercase tracking-[0.18em] text-light/58",
+              day.active ? "mb-1.5" : "mb-2",
+            ]}
+          >
+            {day.day}
+          </p>
+          {day.active ? (
+            <div class="mx-auto mb-2 flex size-8 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">
+              {day.date}
+            </div>
+          ) : (
+            <p class="mb-3 text-center text-lg leading-8 text-light">
+              {day.date}
+            </p>
+          )}
+          <div class="space-y-2">
+            {day.bars.map((bar) => (
+              <div class:list={["h-2.5 rounded-xs", bar.color, bar.width]} />
+            ))}
+          </div>
+        </div>
+      ))
+    }
+  </div>
+</div>

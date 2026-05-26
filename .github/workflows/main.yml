@@ -3,6 +3,13 @@ name: Main
 on:
   push:
     branches: [main]
+    paths:
+      - "calendar/**"
+      - "calendarTests/**"
+      - "calendarUITests/**"
+      - "calendar.xcodeproj/**"
+      - "Config.xcconfig.example"
+      - "Info.plist"
 
 jobs:
   test:

@@ -1,0 +1,23 @@
+{
+  "name": "callisto",
+  "version": "0.0.0-development",
+  "description": "Calendar view optimize for mettings",
+  "private": true,
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "pnpm run --filter homepage dev",
+    "lint": "pnpm run --filter homepage lint",
+    "format": "pnpm run --filter homepage format"
+  },
+  "keywords": [],
+  "author": "2fd <i@fd.me>",
+  "license": "MIT",
+  "packageManager": "pnpm@10.32.0",
+  "devDependencies": {
+    "semantic-release": "^24.0.0",
+    "@semantic-release/changelog": "^6.0.3",
+    "@semantic-release/exec": "^7.0.3",
+    "@semantic-release/git": "^10.0.1",
+    "@semantic-release/github": "^11.0.0"
+  }
+}

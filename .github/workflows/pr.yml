@@ -2,6 +2,13 @@ name: PR Tests
 
 on:
   pull_request:
+    paths:
+      - "calendar/**"
+      - "calendarTests/**"
+      - "calendarUITests/**"
+      - "calendar.xcodeproj/**"
+      - "Config.xcconfig.example"
+      - "Info.plist"
 
 jobs:
   test:

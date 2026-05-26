@@ -1,0 +1,159 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "@fontsource-variable/inter";
+
+@theme inline {
+  /* Typography */
+  --font-sans: "Inter Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
+  --font-heading: var(--font-serif);
+
+  /* Spacing — 8pt grid (default Tailwind spacing already follows this) */
+  --spacing-1: 0.25rem;
+  --spacing-2: 0.5rem;
+  --spacing-4: 1rem;
+  --spacing-6: 1.5rem;
+  --spacing-8: 2rem;
+  --spacing-10: 2.5rem;
+  --spacing-12: 3rem;
+  --spacing-16: 4rem;
+  --spacing-20: 5rem;
+  --spacing-24: 6rem;
+
+  /* Border Radius */
+  --radius-xs: 0.25rem;
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1rem;
+  --radius-2xl: 1rem;
+  --radius-3xl: 1rem;
+  --radius-4xl: 1rem;
+
+  /* Colors */
+  --color-night: #0e0e16;
+  --color-surface: #171726;
+  --color-muted-base: #2b2b3d;
+  --color-primary: #ffb08a;
+  --color-light: #fff8f4;
+  --color-text-muted: #a1a1aa;
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  /* Elevation (dark theme shadows) */
+  --shadow-elevation-0: 0 0 0 0 rgb(0 0 0 / 0);
+  --shadow-elevation-1:
+    0 1px 2px 0 rgb(0 0 0 / 0.15), 0 1px 3px 0 rgb(0 0 0 / 0.1);
+  --shadow-elevation-2:
+    0 4px 6px -1px rgb(0 0 0 / 0.2), 0 2px 4px -2px rgb(0 0 0 / 0.15);
+  --shadow-elevation-3:
+    0 10px 15px -3px rgb(0 0 0 / 0.25), 0 4px 6px -4px rgb(0 0 0 / 0.2);
+
+  /* Motion */
+  --duration-hover: 150ms;
+  --duration-fade: 200ms;
+  --duration-scale: 200ms;
+  --duration-slide: 300ms;
+
+  /* Chart colors (neutral warm palette) */
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  /* Sidebar tokens */
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+:root {
+  --background: #0e0e16;
+  --foreground: #fff8f4;
+  --card: #171726;
+  --card-foreground: #fff8f4;
+  --popover: #171726;
+  --popover-foreground: #fff8f4;
+  --primary: #ffb08a;
+  --primary-foreground: #0e0e16;
+  --secondary: #2b2b3d;
+  --secondary-foreground: #fff8f4;
+  --muted: #2b2b3d;
+  --muted-foreground: #a1a1aa;
+  --accent: #2b2b3d;
+  --accent-foreground: #fff8f4;
+  --destructive: #ff6b6b;
+  --border: #fff8f4 / 10%;
+  --input: #fff8f4 / 15%;
+  --ring: #ffb08a;
+  --radius: 0.75rem;
+  --chart-1: #ffb08a;
+  --chart-2: #a1a1aa;
+  --chart-3: #2b2b3d;
+  --chart-4: #171726;
+  --chart-5: #0e0e16;
+  --sidebar: #171726;
+  --sidebar-foreground: #fff8f4;
+  --sidebar-primary: #ffb08a;
+  --sidebar-primary-foreground: #0e0e16;
+  --sidebar-accent: #2b2b3d;
+  --sidebar-accent-foreground: #fff8f4;
+  --sidebar-border: #fff8f4 / 10%;
+  --sidebar-ring: #ffb08a;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+  }
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-serif;
+  }
+}
+
+@keyframes jupiter {
+  from {
+    top: 0px;
+  }
+  to {
+    top: -400px;
+  }
+}
+
+.jupiter {
+  animation: jupiter linear;
+  animation-timeline: scroll();
+}

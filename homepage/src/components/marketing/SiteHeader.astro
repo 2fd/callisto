@@ -1,0 +1,61 @@
+---
+import CallistoLogo from "@/components/brand/CallistoLogo.astro";
+import DownloadButton from "@/components/marketing/DownloadButton.astro";
+
+interface NavItem {
+  label: string;
+  href: string;
+  active?: boolean;
+}
+
+interface Props {
+  navItems?: NavItem[];
+  showCta?: boolean;
+  class?: string;
+}
+
+const {
+  navItems = [
+    { label: "Features", href: "#features", active: false },
+    { label: "Github", href: "#pricing", active: false },
+  ],
+  showCta = true,
+  class: className,
+} = Astro.props;
+---
+
+<nav
+  class:list={[
+    "relative z-20 flex items-center justify-between gap-6 px-5 py-4 sm:px-6 md:px-8 w-full",
+    className,
+  ]}
+>
+  <CallistoLogo />
+
+  <div class="flex items-center gap-8 md:gap-12">
+    <div
+      class="hidden items-center gap-10 text-[0.7rem] font-semibold uppercase tracking-[0.28em] md:flex"
+    >
+      {
+        navItems.map((item) => (
+          <a
+            href={item.href}
+            class:list={[
+              "transition-colors duration-hover",
+              item.active
+                ? "text-primary hover:text-primary/80"
+                : "text-light/80 hover:text-primary",
+            ]}
+          >
+            {item.label}
+          </a>
+        ))
+      }
+    </div>
+    {
+      showCta && (
+        <DownloadButton class="hidden rounded-sm px-5 shadow-elevation-2 sm:inline-flex" />
+      )
+    }
+  </div>
+</nav>

@@ -1,0 +1,46 @@
+---
+import CallistoMark from "@/components/brand/CallistoMark.astro";
+import DownloadButton from "@/components/marketing/DownloadButton.astro";
+
+interface Props {
+  id?: string;
+  class?: string;
+}
+
+const { id, class: className } = Astro.props;
+---
+
+<section
+  id={id}
+  class:list={[
+    "rounded-lg border border-primary/10 bg-surface shadow-elevation-2 ring-1 ring-foreground/[0.035]",
+    className,
+  ]}
+>
+  <div
+    class="grid items-center gap-8 px-8 py-8 md:grid-cols-[72px_minmax(0,1fr)_minmax(240px,auto)] md:px-16 lg:px-[88px]"
+  >
+    <div class="flex justify-center md:justify-start">
+      <CallistoMark size="lg" class="size-16" />
+    </div>
+
+    <div class="text-center md:text-left">
+      <h2
+        class="font-sans text-2xl font-medium tracking-[-0.03em] text-light md:text-3xl"
+      >
+        Ready to take control of your day?
+      </h2>
+      <p class="mt-2 max-w-[500px] text-base leading-6 text-light/66">
+        Download Callisto for macOS and experience a calmer, more focused way to
+        work.
+      </p>
+    </div>
+
+    <div class="text-center md:justify-self-end">
+      <DownloadButton
+        class="w-full min-w-[240px] rounded-sm px-8 shadow-elevation-2 md:w-auto"
+      />
+      <p class="mt-3 text-xs text-light/48">macOS 14.0 or later</p>
+    </div>
+  </div>
+</section>

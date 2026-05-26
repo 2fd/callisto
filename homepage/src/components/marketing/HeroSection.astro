@@ -1,0 +1,29 @@
+---
+interface Props {
+  class?: string;
+}
+
+const { class: className } = Astro.props;
+---
+
+<div
+  class:list={[
+    "relative z-10 grid w-full h-225 mx-h-[100hv] items-center gap-12 px-8 pb-12 pt-8 md:px-16 md:pb-16 md:pt-12 lg:grid-cols-[minmax(0,1fr)_460px] lg:px-0 lg:pb-12 lg:pt-10",
+    className,
+  ]}
+>
+  <slot name="background" />
+  <div class="w-full space-y-8">
+    <div class="space-y-6">
+      <slot name="copy" />
+    </div>
+    <div class="flex flex-wrap items-center gap-8">
+      <slot name="actions" />
+    </div>
+  </div>
+  <div
+    class="relative mx-auto flex min-h-[350px] w-full max-w-[460px] items-center justify-center lg:justify-end"
+  >
+    <slot name="visual" />
+  </div>
+</div>

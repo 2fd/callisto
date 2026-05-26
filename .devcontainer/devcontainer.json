@@ -1,0 +1,30 @@
+{
+  "name": "Vista",
+  "image": "mcr.microsoft.com/devcontainers/typescript-node:24-trixie",
+  "features": {},
+  "mounts": [
+    "source=pnpm-store,target=/home/node/.pnpm-store,type=volume",
+    "source=${localEnv:HOME}/.npmrc,target=/home/node/.npmrc,type=bind,readonly",
+  ],
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "bradlc.vscode-tailwindcss",
+      ],
+      "settings": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "editor.formatOnSave": true,
+      },
+    },
+  },
+  "runArgs": ["--name", "callisto", "-l", "dev.orbstack.http-port=4321"],
+  "containerEnv": {
+    "NODE_OPTIONS": "--use-openssl-ca",
+    "SSL_CERT_FILE": "/usr/local/share/ca-certificates/orbstack-root.crt",
+  },
+  "forwardPorts": [4321],
+  "postCreateCommand": "npm install -g npm pnpm && pnpm config set store-dir /home/node/.pnpm-store && pnpm install",
+  "remoteUser": "node",
+}
