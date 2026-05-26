@@ -1,5 +1,5 @@
 PROJECT := calendar.xcodeproj
-NIGHTLY_SCHEME := calendar Nightly
+NIGHTLY_SCHEME := nightly
 NIGHTLY_CONFIGURATION := Nightly
 NIGHTLY_DERIVED_DATA := .build/xcode
 NIGHTLY_PRODUCT := $(NIGHTLY_DERIVED_DATA)/Build/Products/Nightly/Callisto.app

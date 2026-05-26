@@ -91,7 +91,7 @@ final class MenuBarRightClick {
     )
 
     menu.addItem(
-      ClosureMenuItem(title: "Quit Callisto", keyEquivalent: "q") {
+      ClosureMenuItem(title: "Quit \(AppInfo.displayName)", keyEquivalent: "q") {
         NSApp.terminate(nil)
       }
     )

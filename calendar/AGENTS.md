@@ -132,10 +132,10 @@ calendar/
 open calendar.xcodeproj
 
 # Build from command line
-xcodebuild -scheme calendar -configuration Debug build
+xcodebuild -scheme callisto -configuration Debug build
 
 # Run tests
-xcodebuild -scheme calendar -configuration Debug test
+xcodebuild -scheme callisto -configuration Debug test
 ```
 
 **Important:** If `xcodebuild` is not available in your environment, ask the user to run the build/test commands and report back the results.

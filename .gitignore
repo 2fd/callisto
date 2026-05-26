@@ -6,3 +6,5 @@ plans/
 node_modules/
 .build/
 .DS_Store
+calendar.xcodeproj/xcuserdata/
+calendar.xcodeproj/project.xcworkspace/xcuserdata/
