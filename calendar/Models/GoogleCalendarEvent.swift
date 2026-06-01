@@ -72,7 +72,7 @@ final class GoogleCalendarEvent {
       }
       
       if (conferenceLink!.contains("meet.google.com")) {
-        return "34A853"
+        return "fed812"
       }
     }
     
