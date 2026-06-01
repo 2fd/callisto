@@ -361,6 +361,7 @@ final class GoogleAccountManager {
 
     let verifier = PKCEHelper.generateVerifier()
     let challenge = PKCEHelper.generateChallenge(from: verifier)
+    let state = PKCEHelper.generateState()
 
     var components = URLComponents(
       string: AuthConfig.authorizationEndpoint
@@ -375,14 +376,12 @@ final class GoogleAccountManager {
       ),
       URLQueryItem(name: "code_challenge", value: challenge),
       URLQueryItem(name: "code_challenge_method", value: "S256"),
+      URLQueryItem(name: "state", value: state),
       URLQueryItem(name: "access_type", value: "offline"),
       URLQueryItem(name: "prompt", value: "consent"),
     ]
     if let loginHint {
       items.append(URLQueryItem(name: "login_hint", value: loginHint))
-      items.append(
-        URLQueryItem(name: "include_granted_scopes", value: "true")
-      )
     }
     components.queryItems = items
 
@@ -409,7 +408,7 @@ final class GoogleAccountManager {
 
       defer { currentSession = nil }
 
-      let code = try extractAuthCode(from: callbackURL)
+      let code = try extractAuthCode(from: callbackURL, expectedState: state)
       let tokens = try await exchangeCode(code: code, verifier: verifier)
       let info = try await fetchUserInfo(accessToken: tokens.accessToken)
       return (tokens, info)
@@ -428,17 +427,31 @@ final class GoogleAccountManager {
     }
   }
 
-  private func extractAuthCode(from url: URL) throws -> String {
+  private func extractAuthCode(from url: URL, expectedState: String) throws
+    -> String
+  {
     guard
       let components = URLComponents(
         url: url,
         resolvingAgainstBaseURL: false
-      ),
+      )
+    else {
+      throw AuthError.missingAuthCode
+    }
+
+    let returnedState = components.queryItems?.first { $0.name == "state" }?
+      .value
+    guard returnedState == expectedState else {
+      throw AuthError.invalidState
+    }
+
+    guard
       let code = components.queryItems?.first(where: { $0.name == "code" }
       )?.value
     else {
       throw AuthError.missingAuthCode
     }
+
     return code
   }
 
@@ -497,6 +510,7 @@ nonisolated enum AuthError: LocalizedError, Sendable {
   case noRefreshToken
   case refreshFailed(String)
   case userCancelled
+  case invalidState
 
   var errorDescription: String? {
     switch self {
@@ -506,6 +520,7 @@ nonisolated enum AuthError: LocalizedError, Sendable {
     case .noRefreshToken: "No refresh token available."
     case .refreshFailed(let detail): "Token refresh failed: \(detail)"
     case .userCancelled: "Authentication was cancelled."
+    case .invalidState: "OAuth state validation failed."
     }
   }
 }

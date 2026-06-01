@@ -28,6 +28,13 @@ A lightweight macOS menu bar app for viewing Google Calendar events.
 4. Go to **APIs & Services → Credentials** and create an **OAuth 2.0 Client ID** (application type: **Desktop app**).
 5. Note the **Client ID** — you will need it in the next step.
 
+Google may also warn that the project is not configured for **Cross-Account
+Protection**. Callisto already requests the required Google identity scopes, but
+Cross-Account Protection itself requires a deployed HTTPS receiver and Google
+Cloud RISC registration. See
+[`docs/google-cross-account-protection.md`](docs/google-cross-account-protection.md)
+for the setup checklist and product decision points.
+
 ### 2. Configure the project
 
 Create a file at the project root named `Config.xcconfig`:

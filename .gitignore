@@ -3,6 +3,7 @@ plans/
 
 .claude/
 .agents/
+.codex/
 node_modules/
 .build/
 .DS_Store
