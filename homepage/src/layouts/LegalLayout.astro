@@ -1,0 +1,153 @@
+---
+import "@/styles/global.css";
+import CallistoLogo from "@/components/brand/CallistoLogo.astro";
+
+interface Props {
+  title: string;
+  description: string;
+  eyebrow: string;
+  updated: string;
+}
+
+const { title, description, eyebrow, updated } = Astro.props;
+
+const pageTitle = `${title} — Callisto`;
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <meta name="viewport" content="width=device-width" />
+    <meta name="generator" content={Astro.generator} />
+    <title>{pageTitle}</title>
+    <meta name="description" content={description} />
+  </head>
+  <body class="min-h-screen bg-night text-foreground antialiased">
+    <main
+      class="relative mx-auto flex min-h-screen w-full max-w-310 flex-col px-4 py-4 sm:px-6 lg:px-8"
+    >
+      <nav class="flex items-center justify-between gap-6 py-4">
+        <CallistoLogo />
+        <div
+          class="flex items-center gap-5 text-[0.7rem] font-semibold uppercase tracking-[0.28em]"
+        >
+          <a
+            href="/"
+            class="text-light/70 transition-colors duration-hover hover:text-primary"
+          >
+            Home
+          </a>
+          <a
+            href="/privacy/"
+            class="text-light/70 transition-colors duration-hover hover:text-primary"
+          >
+            Privacy
+          </a>
+          <a
+            href="/terms/"
+            class="text-light/70 transition-colors duration-hover hover:text-primary"
+          >
+            Terms
+          </a>
+        </div>
+      </nav>
+
+      <section
+        class="grid gap-10 py-16 md:grid-cols-[minmax(0,0.72fr)_minmax(0,1fr)] md:py-24"
+      >
+        <div>
+          <p
+            class="text-[0.7rem] font-semibold uppercase tracking-[0.28em] text-primary"
+          >
+            {eyebrow}
+          </p>
+          <h1
+            class="mt-5 font-sans text-4xl font-medium leading-tight text-light sm:text-5xl"
+          >
+            {title}
+          </h1>
+          <p class="mt-5 max-w-xl text-base leading-7 text-light/68">
+            {description}
+          </p>
+          <p class="mt-6 text-sm text-light/48">Last updated {updated}</p>
+        </div>
+
+        <article
+          class="legal-copy rounded-lg border border-light/10 bg-surface/70 px-6 py-7 shadow-elevation-2 sm:px-8 sm:py-9"
+        >
+          <slot />
+        </article>
+      </section>
+
+      <footer
+        class="mt-auto flex flex-col gap-3 border-t border-light/10 py-8 text-sm text-light/52 sm:flex-row sm:items-center sm:justify-between"
+      >
+        <p>Callisto for macOS</p>
+        <div class="flex gap-5">
+          <a
+            class="transition-colors duration-hover hover:text-primary"
+            href="/"
+          >
+            Home
+          </a>
+          <a
+            class="transition-colors duration-hover hover:text-primary"
+            href="/privacy/"
+          >
+            Privacy
+          </a>
+          <a
+            class="transition-colors duration-hover hover:text-primary"
+            href="/terms/"
+          >
+            Terms
+          </a>
+        </div>
+      </footer>
+    </main>
+  </body>
+</html>
+
+<style>
+  .legal-copy :global(h2) {
+    margin-top: 2rem;
+    font-family: var(--font-sans);
+    font-size: 1.125rem;
+    font-weight: 600;
+    line-height: 1.5;
+    color: rgb(255 248 244 / 0.96);
+  }
+
+  .legal-copy :global(h2:first-child) {
+    margin-top: 0;
+  }
+
+  .legal-copy :global(p) {
+    margin-top: 0.8rem;
+    color: rgb(255 248 244 / 0.68);
+    line-height: 1.75;
+  }
+
+  .legal-copy :global(ul) {
+    margin-top: 0.9rem;
+    display: grid;
+    gap: 0.65rem;
+    padding-left: 1.15rem;
+    color: rgb(255 248 244 / 0.68);
+    line-height: 1.65;
+  }
+
+  .legal-copy :global(li::marker) {
+    color: rgb(255 176 138 / 0.9);
+  }
+
+  .legal-copy :global(a) {
+    color: #ffb08a;
+    text-decoration: underline;
+    text-decoration-color: rgb(255 176 138 / 0.35);
+    text-underline-offset: 0.22em;
+  }
+</style>
