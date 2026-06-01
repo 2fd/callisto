@@ -76,18 +76,11 @@ struct EventRow: View {
             Image(systemName: "person.2.slash.fill")
               .resizable()
               .aspectRatio(contentMode: .fit)
-              .frame(width: 12, height: 12)
+              .frame(width: 15, height: 15)
               .foregroundStyle(Color(hex: calendar.backgroundColor))
               .help("all attendees declined")
           }
 
-          if withPlay {
-            Image(systemName: "play")
-              .resizable()
-              .aspectRatio(contentMode: .fit)
-              .frame(width: 12, height: 12)
-              .foregroundStyle(.secondary)
-          }
         }
 
         if !oneLiner {
@@ -125,7 +118,7 @@ struct EventRow: View {
       isHover = hover
     }
     .background {
-      if withPlay {
+      if isActiveEvent {
         OngoingEventBackground(
           tint: Color(hex: calendar.backgroundColor),
           isHovering: isHover
@@ -197,7 +190,7 @@ struct EventRow: View {
     event.startDate < Date.now && event.endDate > Date.now
   }
 
-  private var withPlay: Bool {
+  private var isActiveEvent: Bool {
     playableType && playableStatus && playableDate
   }
 
@@ -211,58 +204,73 @@ private struct OngoingEventBackground: View {
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
   var body: some View {
-    Group {
-      if #available(macOS 15.0, *) {
+    RoundedRectangle(cornerRadius: 6)
+      .fill(
+        LinearGradient(
+          colors: [tint.opacity(0.18), tint.opacity(0.1), tint.opacity(0.18)],
+          startPoint: .leading,
+          endPoint: .trailing
+        )
+      )
+      .overlay {
         if reduceMotion {
-          OngoingEventMesh(tint: tint, phase: 0)
+          SkeletonShimmerBand(tint: tint, progress: 0.5)
         } else {
           TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { timeline in
-            OngoingEventMesh(
+            SkeletonShimmerBand(
               tint: tint,
-              phase: timeline.date.timeIntervalSinceReferenceDate
+              progress: shimmerProgress(for: timeline.date)
             )
           }
         }
-      } else {
-        RoundedRectangle(cornerRadius: 6)
-          .fill(
-            LinearGradient(
-              colors: [tint.opacity(0.38), tint.opacity(0.12), tint.opacity(0.28)],
-              startPoint: .leading,
-              endPoint: .trailing
-            )
-          )
       }
-    }
-    .opacity(isHovering ? 0.85 : 0.65)
+    .opacity(isHovering ? 0.9 : 0.72)
     .clipShape(RoundedRectangle(cornerRadius: 6))
     .padding(.horizontal, 4)
   }
+
+  private func shimmerProgress(for date: Date) -> Double {
+    let sweepDuration = 2.4
+    let pauseDuration = 1.6
+    let cycleDuration = sweepDuration + pauseDuration
+    let cycleTime = date.timeIntervalSinceReferenceDate.truncatingRemainder(
+      dividingBy: cycleDuration
+    )
+
+    guard cycleTime < sweepDuration else {
+      return 1
+    }
+
+    return cycleTime / sweepDuration
+  }
 }
 
-@available(macOS 15.0, *)
-private struct OngoingEventMesh: View {
+private struct SkeletonShimmerBand: View {
   let tint: Color
-  let phase: TimeInterval
+  let progress: Double
 
   var body: some View {
-    let horizontalDrift = Float(sin(phase * 0.8)) * 0.13
-    let verticalDrift = Float(cos(phase * 0.65)) * 0.12
+    GeometryReader { geometry in
+      let width = geometry.size.width
+      let bandWidth = width * 0.58
+      let travelDistance = width + bandWidth * 2
+      let xOffset = CGFloat(progress) * travelDistance - bandWidth
 
-    MeshGradient(
-      width: 3,
-      height: 3,
-      points: [
-        SIMD2(0, 0), SIMD2(0.5, 0), SIMD2(1, 0),
-        SIMD2(0, 0.5), SIMD2(0.5 + horizontalDrift, 0.5 + verticalDrift), SIMD2(1, 0.5),
-        SIMD2(0, 1), SIMD2(0.5, 1), SIMD2(1, 1),
-      ],
-      colors: [
-        tint.opacity(0.18), tint.opacity(0.42), tint.opacity(0.16),
-        tint.opacity(0.4), tint.opacity(0.75), .accentColor.opacity(0.38),
-        tint.opacity(0.16), .accentColor.opacity(0.3), tint.opacity(0.2),
-      ]
-    )
+      LinearGradient(
+        stops: [
+          .init(color: tint.opacity(0.0), location: 0.0),
+          .init(color: tint.opacity(0.2), location: 0.34),
+          .init(color: Color.white.opacity(0.45), location: 0.5),
+          .init(color: tint.opacity(0.2), location: 0.66),
+          .init(color: tint.opacity(0.0), location: 1.0),
+        ],
+        startPoint: .leading,
+        endPoint: .trailing
+      )
+      .frame(width: bandWidth)
+      .offset(x: xOffset)
+      .blendMode(.screen)
+    }
   }
 }
 
