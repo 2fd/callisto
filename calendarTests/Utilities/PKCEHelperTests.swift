@@ -21,6 +21,20 @@ struct PKCEHelperTests {
         #expect(a != b)
     }
 
+    @Test func generateStateIsURLSafe() {
+        let state = PKCEHelper.generateState()
+        #expect(state.count == 43)
+        #expect(!state.contains("+"))
+        #expect(!state.contains("/"))
+        #expect(!state.contains("="))
+    }
+
+    @Test func generateStateUniqueness() {
+        let a = PKCEHelper.generateState()
+        let b = PKCEHelper.generateState()
+        #expect(a != b)
+    }
+
     @Test func generateChallengeIsDeterministic() {
         let verifier = PKCEHelper.generateVerifier()
         let c1 = PKCEHelper.generateChallenge(from: verifier)

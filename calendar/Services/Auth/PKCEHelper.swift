@@ -9,6 +9,16 @@ nonisolated enum PKCEHelper {
     /// Generates a cryptographically random code verifier (43-character base64url string).
     /// - Returns: A URL-safe base64-encoded random string.
     static func generateVerifier() -> String {
+        generateRandomURLSafeString()
+    }
+
+    /// Generates a cryptographically random OAuth state value.
+    /// - Returns: A URL-safe base64-encoded random string.
+    static func generateState() -> String {
+        generateRandomURLSafeString()
+    }
+
+    private static func generateRandomURLSafeString() -> String {
         var bytes = [UInt8](repeating: 0, count: 32)
         _ = SecRandomCopyBytes(kSecRandomDefault, bytes.count, &bytes)
         return Data(bytes)
