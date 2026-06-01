@@ -1,10 +1,31 @@
 {
   "name": "Vista",
-  "image": "mcr.microsoft.com/devcontainers/typescript-node:24-trixie",
-  "features": {},
+  "image": "mcr.microsoft.com/devcontainers/base:trixie",
+  "features": {
+    "ghcr.io/devcontainers/features/common-utils:2": {},
+    "ghcr.io/devcontainers/features/git:1": {},
+    "ghcr.io/devcontainers/features/github-cli:1": {},
+    "ghcr.io/synergy-shock/devcontainer-features/node:1": {
+      "version": "24",
+      "npmVersion": "latest",
+      "pnpmVersion": "11.1.3",
+    },
+    "ghcr.io/synergy-shock/devcontainer-features/claude:2": {},
+    "ghcr.io/synergy-shock/devcontainer-features/rtk:0": {},
+    "ghcr.io/synergy-shock/devcontainer-features/gitbutler:0": {},
+  },
   "mounts": [
-    "source=pnpm-store,target=/home/node/.pnpm-store,type=volume",
+    "source=devcontainerstore,target=/home/node/.local,type=volume",
     "source=${localEnv:HOME}/.npmrc,target=/home/node/.npmrc,type=bind,readonly",
+    "source=${localEnv:HOME}/.gitconfig.devcontainer,target=/home/node/.gitconfig,type=bind,readonly",
+    "source=${localEnv:HOME}/.ssh/allowed_signers,target=/home/node/.ssh/allowed_signers,type=bind,readonly",
+    "source=${localEnv:HOME}/.aws,target=/home/node/.aws,type=bind,readonly",
+    // "source=${localEnv:HOME}/.config/opencode,target=/home/node/.config/opencode,type=bind",
+    // "source=${localEnv:HOME}/.local/share/opencode,target=/home/node/.local/share/opencode,type=bind",
+    "source=${localEnv:HOME}/.claude,target=/home/node/.claude,type=bind",
+    "source=${localEnv:HOME}/.claude.json,target=/home/node/.claude.json,type=bind",
+    "source=/Applications/1Password.app/Contents/MacOS/op-ssh-sign,target=/op-ssh-sign,type=bind,readonly",
+    "source=/run/host-services/ssh-auth.sock,target=/agent.sock,type=bind",
   ],
   "customizations": {
     "vscode": {
@@ -20,11 +41,14 @@
     },
   },
   "runArgs": ["--name", "callisto", "-l", "dev.orbstack.http-port=4321"],
+  "remoteEnv": {
+    "PATH": "${containerEnv:PATH}:/home/node/.local/share/npm-global/bin:/home/node/.local/bin:/home/node/.local/share/pnpm/bin",
+  },
   "containerEnv": {
-    "NODE_OPTIONS": "--use-openssl-ca",
-    "SSL_CERT_FILE": "/usr/local/share/ca-certificates/orbstack-root.crt",
+    "SSH_AUTH_SOCK": "/agent.sock",
   },
   "forwardPorts": [4321],
-  "postCreateCommand": "npm install -g npm pnpm && pnpm config set store-dir /home/node/.pnpm-store && pnpm install",
+  "postCreateCommand": "pnpm config set store-dir /home/node/.local/share/pnpm && rm -rf .pnpm-store",
+  "postStartCommand": "sudo chown node /agent.sock",
   "remoteUser": "node",
 }
