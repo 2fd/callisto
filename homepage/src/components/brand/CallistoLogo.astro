@@ -1,5 +1,5 @@
 ---
-import CallistoMark from "./CallistoMark.astro";
+import callistoLogo from "@/assets/callisto-logo.png";
 
 interface Props {
   class?: string;
@@ -13,7 +13,13 @@ const { class: className } = Astro.props;
   class:list={["flex items-center gap-4", className]}
   aria-label="Callisto Homepage"
 >
-  <CallistoMark class="size-10 text-primary" />
+  <img
+    src={callistoLogo.src}
+    alt="Callisto"
+    width="40"
+    height="40"
+    class="size-10"
+  />
   <span class="text-base font-medium uppercase tracking-[0.45em] text-light"
     >Callisto</span
   >
