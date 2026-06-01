@@ -4,18 +4,16 @@
   "type": "module",
   "scripts": {
     "dev": "astro dev --host",
-    "build": "wrangler types && astro build",
-    "preview": "wrangler types && astro preview",
+    "build": "astro build",
+    "preview": "astro preview",
     "deploy": "wrangler deploy",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "astro": "astro",
-    "generate-types": "wrangler types"
+    "astro": "astro"
   },
   "dependencies": {
-    "@astrojs/cloudflare": "^13.6.0",
     "@fontsource-variable/inter": "^5.2.8",
     "@lucide/astro": "^1.17.0",
     "@tailwindcss/vite": "^4.3.0",

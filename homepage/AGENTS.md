@@ -10,7 +10,7 @@ A fast, static marketing homepage built with Astro and deployed to Cloudflare Wo
 - **Styling:** Tailwind CSS v4 with `@theme inline` (no `tailwind.config.js`)
 - **UI Components:** shadcn/ui-style Astro components using `class-variance-authority`
 - **Typography:** Inter Variable (sans), system serif stack
-- **Deployment:** Cloudflare Workers via `@astrojs/cloudflare` adapter + Wrangler
+- **Deployment:** Cloudflare Workers static assets via Wrangler
 - **Tooling:** Prettier, ESLint
 - **Node:** >= 22.12.0
 
@@ -28,7 +28,7 @@ homepage/
 │   │   └── global.css      # Tailwind imports, theme tokens, base styles
 │   └── assets/             # Images and media
 ├── public/                 # Static assets (favicon, etc.)
-├── astro.config.mjs        # Astro config (static output, Cloudflare adapter)
+├── astro.config.mjs        # Astro config (static output)
 ├── wrangler.jsonc          # Cloudflare Workers deployment config
 ├── tsconfig.json           # Strict TypeScript with @/* path alias
 └── DESIGN.md               # Callisto Design System spec
@@ -41,7 +41,7 @@ homepage/
 - **Tailwind v4 `@theme inline`:** All design tokens live in `src/styles/global.css`. No separate Tailwind config file.
 - **Astro components for UI primitives:** Button, Card, and card subcomponents are `.astro` files using CVA for variant logic. No React or other JS framework.
 - **Path alias `@/*`:** Maps to `./src/*` in both TypeScript and Vite.
-- **Cloudflare Workers adapter:** `@astrojs/cloudflare` handles static asset serving on the edge.
+- **Cloudflare Workers static assets:** Wrangler serves the `dist` output directly, with no Worker entrypoint or bindings.
 
 ## Design Tokens
 
