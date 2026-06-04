@@ -102,6 +102,7 @@ private struct MenuBarLabelContainer: View {
   let event: GoogleCalendarEvent?
   let eventManager: GoogleCalendarEventManager
   let rightClick: MenuBarRightClick
+  let appUpdater: AppUpdater
   @Environment(\.openWindow) private var openWindow
 
   var body: some View {
@@ -110,6 +111,7 @@ private struct MenuBarLabelContainer: View {
         rightClick.start(
           eventManager: eventManager,
           accountManager: eventManager.accounts,
+          appUpdater: appUpdater,
           openSettings: {
             NSApp.keyWindow?.close()
             openWindow(id: AppWindow.settings.rawValue)

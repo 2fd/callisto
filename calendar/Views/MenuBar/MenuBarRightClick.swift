@@ -13,16 +13,19 @@ final class MenuBarRightClick {
   private var monitor: Any?
   private weak var eventManager: GoogleCalendarEventManager?
   private weak var accountManager: GoogleAccountManager?
+  private weak var appUpdater: AppUpdater?
   private var openSettings: (() -> Void)?
 
   func start(
     eventManager: GoogleCalendarEventManager,
     accountManager: GoogleAccountManager,
+    appUpdater: AppUpdater,
     openSettings: @escaping () -> Void
   ) {
     guard monitor == nil else { return }
     self.eventManager = eventManager
     self.accountManager = accountManager
+    self.appUpdater = appUpdater
     self.openSettings = openSettings
 
     monitor = NSEvent.addLocalMonitorForEvents(matching: .rightMouseDown) {
@@ -83,6 +86,14 @@ final class MenuBarRightClick {
     )
 
     menu.addItem(.separator())
+
+    if !AppInfo.isNightlyBuild {
+      menu.addItem(
+        ClosureMenuItem(title: "Check for Updates…") { [weak self] in
+          self?.appUpdater?.checkForUpdates()
+        }
+      )
+    }
 
     menu.addItem(
       ClosureMenuItem(title: "Open Settings…") { [weak self] in

@@ -11,7 +11,7 @@ struct UpdatesSettingsSection: View {
         VStack(alignment: .leading, spacing: 2) {
           Text("\(AppInfo.displayName) \(appVersion)")
             .font(.body)
-          Text("Build \(appBuild)")
+          Text(appBuild)
             .font(.caption)
             .foregroundStyle(.secondary)
         }
@@ -21,16 +21,17 @@ struct UpdatesSettingsSection: View {
         Button("Check for Updates…") {
           updater.checkForUpdates()
         }
+        .disabled(AppInfo.isNightlyBuild)
       }
       .padding(.vertical, 2)
     }
   }
 
   private var appVersion: String {
-    Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "Unknown"
+    AppInfo.version
   }
 
   private var appBuild: String {
-    Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "Unknown"
+    "\(AppInfo.isNightlyBuild ? "Build ID" : "Build") \(AppInfo.buildID)"
   }
 }

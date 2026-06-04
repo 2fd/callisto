@@ -109,6 +109,7 @@
 				B0E4A7172F70A84400986DC4 /* Sources */,
 				B0E4A7182F70A84400986DC4 /* Frameworks */,
 				B0E4A7192F70A84400986DC4 /* Resources */,
+				B01F07AE2F95AB19008569CE /* Stamp Nightly Build ID */,
 			);
 			buildRules = (
 			);
@@ -243,6 +244,29 @@
 		};
 /* End PBXResourcesBuildPhase section */
 
+/* Begin PBXShellScriptBuildPhase section */
+		B01F07AE2F95AB19008569CE /* Stamp Nightly Build ID */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Stamp Nightly Build ID";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "if [ \"$CONFIGURATION\" != \"Nightly\" ]; then\n  exit 0\nfi\n\nINFO_PLIST=\"$TARGET_BUILD_DIR/$INFOPLIST_PATH\"\nif [ ! -f \"$INFO_PLIST\" ]; then\n  echo \"warning: Info.plist not found at $INFO_PLIST\"\n  exit 0\nfi\n\nBUILD_ID=$(date -u +%Y%m%d%H%M%S)\n/usr/libexec/PlistBuddy -c \"Set :CFBundleVersion $BUILD_ID\" \"$INFO_PLIST\" || /usr/libexec/PlistBuddy -c \"Add :CFBundleVersion string $BUILD_ID\" \"$INFO_PLIST\"\n";
+			showEnvVarsInLog = 0;
+		};
+/* End PBXShellScriptBuildPhase section */
+
 /* Begin PBXSourcesBuildPhase section */
 		B0E4A7172F70A84400986DC4 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
@@ -362,6 +386,7 @@
 				DEVELOPMENT_TEAM = 489WB5L6KD;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_PREVIEWS = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Info.plist;
