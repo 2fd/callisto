@@ -259,9 +259,9 @@ private struct SkeletonShimmerBand: View {
       LinearGradient(
         stops: [
           .init(color: tint.opacity(0.0), location: 0.0),
-          .init(color: tint.opacity(0.2), location: 0.34),
-          .init(color: Color.white.opacity(0.45), location: 0.5),
-          .init(color: tint.opacity(0.2), location: 0.66),
+          .init(color: tint.opacity(0.16), location: 0.34),
+          .init(color: tint.opacity(0.32), location: 0.5),
+          .init(color: tint.opacity(0.16), location: 0.66),
           .init(color: tint.opacity(0.0), location: 1.0),
         ],
         startPoint: .leading,
@@ -269,7 +269,6 @@ private struct SkeletonShimmerBand: View {
       )
       .frame(width: bandWidth)
       .offset(x: xOffset)
-      .blendMode(.screen)
     }
   }
 }

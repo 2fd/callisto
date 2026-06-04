@@ -21,6 +21,6 @@ extension Color {
             b = 0.96
         }
 
-        self.init(red: r, green: g, blue: b)
+        self.init(.sRGB, red: r, green: g, blue: b, opacity: 1)
     }
 }
