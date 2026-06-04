@@ -34,6 +34,7 @@ struct SettingsWindow: View {
 
       Form {
         UpdatesSettingsSection()
+        StartupSettingsSection()
 
         Section("Sync") {
           Picker(selection: $settings.refreshIntervalMinutes) {

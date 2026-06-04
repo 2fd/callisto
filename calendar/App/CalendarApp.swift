@@ -17,6 +17,7 @@ struct CalendarApp: App {
   @State private var minuteTicker = MinuteScheduler()
   @State private var rightClick = MenuBarRightClick()
   @State private var appUpdater = AppUpdater()
+  @State private var loginItemService = LoginItemService()
 
   private let container: ModelContainer
 
@@ -67,7 +68,8 @@ struct CalendarApp: App {
       MenuBarLabelContainer(
         event: eventManager.next(),
         eventManager: eventManager,
-        rightClick: rightClick
+        rightClick: rightClick,
+        appUpdater: appUpdater
       )
       .environment(minuteTicker)
     }
@@ -82,6 +84,7 @@ struct CalendarApp: App {
         .environment(userSettings)
         .environment(minuteTicker)
         .environment(appUpdater)
+        .environment(loginItemService)
         .modelContainer(container)
     }
     .windowResizability(.contentSize)
