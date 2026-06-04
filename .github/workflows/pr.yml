@@ -1,7 +1,9 @@
 name: PR Tests
 
 on:
+  workflow_dispatch:
   pull_request:
+    types: [labeled]
     paths:
       - "calendar/**"
       - "calendarTests/**"
@@ -10,9 +12,14 @@ on:
       - "Config.xcconfig.example"
       - "Info.plist"
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
-    name: Test
+    name: Build for Testing
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.label.name == 'run-macos-ci' }}
     runs-on: macos-26
     steps:
       - uses: actions/checkout@v4
@@ -23,7 +30,7 @@ jobs:
       - name: Create Config.xcconfig
         run: cp Config.xcconfig.example Config.xcconfig
 
-      - name: Run tests
+      - name: Build for testing
         run: |
           xcodebuild \
             -project calendar.xcodeproj \

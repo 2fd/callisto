@@ -13,7 +13,7 @@ on:
 
 jobs:
   test:
-    name: Test
+    name: Build for Testing
     runs-on: macos-26
     steps:
       - uses: actions/checkout@v4
@@ -24,7 +24,7 @@ jobs:
       - name: Create Config.xcconfig
         run: cp Config.xcconfig.example Config.xcconfig
 
-      - name: Run tests
+      - name: Build for testing
         run: |
           xcodebuild \
             -project calendar.xcodeproj \
