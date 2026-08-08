@@ -9,15 +9,6 @@
         "revision" : "066e75a8b3e99962685d6a90cdd5293ebffd9261",
         "version" : "2.9.1"
       }
-    },
-    {
-      "identity" : "stripes",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/eneko/Stripes",
-      "state" : {
-        "revision" : "d533fd44b8043a3abbf523e733599173d6f98c11",
-        "version" : "0.2.0"
-      }
     }
   ],
   "version" : 3
