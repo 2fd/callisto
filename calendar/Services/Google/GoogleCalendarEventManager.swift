@@ -5,7 +5,7 @@ import os
 /// Top of the sync chain — owns events and constructs the account and calendar
 /// managers it depends on.
 ///
-/// ``CalendarApp`` holds only this instance and reaches through ``accounts``
+/// ``AppDelegate`` holds only this instance and reaches through ``accounts``
 /// and ``calendars`` to inject them into the SwiftUI environment.
 @MainActor @Observable
 final class GoogleCalendarEventManager {

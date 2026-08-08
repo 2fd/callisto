@@ -4,8 +4,11 @@
 
 - **Language:** Swift (`SWIFT_VERSION = 5.0`, with `SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor`
   and `SWIFT_APPROACHABLE_CONCURRENCY = YES` — types are main-actor isolated by default)
-- **UI:** SwiftUI — `MenuBarExtra(.window)` popover plus one `Window` scene for Settings.
-  No Dock icon (`LSUIElement = YES`), no main window.
+- **UI:** SwiftUI content hosted by AppKit. There is no SwiftUI `App` — `main.swift`
+  installs `AppDelegate`, which owns an `NSStatusItem` (`MenuBarController`), a borderless
+  `NSPanel` for the popover (`MenuBarPanel`), and an `NSWindow` for Settings
+  (`SettingsWindowController`). No Dock icon (`LSUIElement = YES`), no main window.
+  See [Why not `MenuBarExtra`](#why-not-menubarextra).
 - **State:** Observation framework (`@Observable`). No Combine, no `@Query`.
 - **Persistence:** SwiftData (accounts, calendars, events, attendees, attachments, reminders)
 - **Secrets:** macOS Keychain (OAuth tokens only)
@@ -21,7 +24,7 @@
 
 ```
 calendar/
-├── App/                       # CalendarApp — @main, scenes, dependency construction
+├── App/                       # main.swift + AppDelegate — dependency construction, wiring
 ├── Models/
 │   ├── *.swift                # SwiftData @Model types + EventEntry / EventDay value types
 │   ├── *Mock.swift            # #if DEBUG preview fixtures
@@ -31,7 +34,7 @@ calendar/
 │   ├── Keychain/              # KeychainService, OAuthTokens, KeychainError
 │   └── Google/                # The three managers + GoogleCalendarAPI + APIError
 ├── Views/
-│   ├── MenuBar/               # Menu bar label, popover, right-click menu
+│   ├── MenuBar/               # Status item, panel, chrome, label, right-click menu
 │   ├── Events/                # Event list, rows, context menu, preview fixtures
 │   ├── Accounts/              # NoAccountsView
 │   └── Settings/              # Settings window, updates section
@@ -52,11 +55,14 @@ in-memory array, and exposes `iter*()` read methods to SwiftUI.
 | User preferences | `UserSettings` | `SettingsStore`-backed, computed properties |
 | HTTP transport | `GoogleCalendarAPI` | `nonisolated struct`, stateless, `Sendable` |
 
-`CalendarApp.init` builds one `ModelContainer` and one `GoogleCalendarEventManager`;
-that manager constructs `GoogleCalendarManager`, which constructs `GoogleAccountManager`.
-The app reaches through `eventManager.accounts` / `eventManager.calendars` to inject all
-three into the SwiftUI environment. Views resolve them with
-`@Environment(GoogleCalendarEventManager.self)` etc.
+`AppDelegate.applicationDidFinishLaunching` builds one `ModelContainer` and one
+`GoogleCalendarEventManager`; that manager constructs `GoogleCalendarManager`, which
+constructs `GoogleAccountManager`. `AppDelegate.inject(_:)` reaches through
+`eventManager.accounts` / `eventManager.calendars` to put all three into the SwiftUI
+environment. Views resolve them with `@Environment(GoogleCalendarEventManager.self)` etc.
+
+The panel and the settings window are hosted separately, so **each root must be passed
+through `inject(_:)`** — there is no single scene graph to inherit from.
 
 ### Observation contract
 
@@ -122,7 +128,7 @@ read `ticker.now` to register the dependency.
 ### Data flow
 
 ```
-                    CalendarApp (@main)
+                    main.swift → AppDelegate
                     ModelContainer + UserSettings + schedulers
                               │
                     GoogleCalendarEventManager
@@ -130,12 +136,46 @@ read `ticker.now` to register the dependency.
                        │      └── GoogleAccountManager ── Keychain
                        └── GoogleCalendarAPI ── URLSession ── Google Calendar API v3
                               │
-              .environment(...) into MenuBarExtra + Settings Window
+              inject(...) into MenuBarController (status item + panel)
+                        and SettingsWindowController
                               │
                     Views call iter*() / next() to read,
                     call manager methods to mutate,
                     read/write UserSettings directly
 ```
+
+## Why not `MenuBarExtra`
+
+`MenuBarExtra` renders its `label:` into a **template** image: alpha is kept, colour is
+discarded and replaced by the menu bar tint, so `ConferenceIconView`'s per-provider colour
+was flat white in the bar. It also hides its `NSStatusItem`, so right-clicks had to be
+stolen with a global `NSEvent` monitor matched on window class name.
+
+`MenuBarController` hosts the label in an `NSHostingView` inside the status item button
+instead, which keeps its colour, and gets both mouse buttons from
+`button.sendAction(on:)`. Two consequences to keep in mind:
+
+- **The panel is outside SwiftUI's scene graph**, so `@Environment(\.openWindow)` does not
+  work in it and there is no public way to open a `Window(id:)` scene from AppKit. Views
+  open windows through `@Environment(\.openWindows)` (`OpenWindowsAction`), which
+  `AppDelegate` backs with `SettingsWindowController`.
+- **The panel is not the key window when a link is followed**, so never dismiss it with
+  `NSApp.keyWindow?.close()` — that would close the settings window. Call
+  `dismissMenuBarPanel()`.
+
+Views handed to `MenuBarController` are built **once** and kept by the hosting view, so
+anything resolved outside a `body` is frozen at launch. `MenuBarStatusLabel` reads
+`eventManager.next()` inside its own `body` for exactly this reason.
+
+### Panel chrome and previews
+
+The panel is borderless, so `PopoverChrome` — not the window — draws the `.popover`
+material and the corner radius, and `PopoverContent` wraps itself in it. That is what keeps
+previews honest: a preview has no window, so anything the window contributed would silently
+vanish from the canvas. `MenuBarPreviewStage` (DEBUG) puts previews on a stand-in desktop so
+the material has something to blend with, and `MenuBarLabel`'s previews render the label on
+a menu bar strip next to a template-flattened copy — if the two rows ever match, the label
+has regressed to template rendering.
 
 ## Conventions
 

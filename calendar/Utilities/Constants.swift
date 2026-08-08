@@ -18,6 +18,20 @@ enum Constants {
 
 enum UI {
     static let Width = CGFloat(280)
+
+    /// Corner radius AppKit uses for menu bar popovers on macOS 14+.
+    ///
+    /// ``MenuBarPanel`` is borderless, so ``PopoverChrome`` draws this itself.
+    static let PanelCornerRadius = CGFloat(10)
+
+    /// Gap between the bottom of the menu bar and the top of the panel.
+    static let PanelGap = CGFloat(6)
+
+    /// Height of the system menu bar, used only to stage previews.
+    static let MenuBarHeight = CGFloat(24)
+
+    /// Widest the status item label is allowed to grow before its title truncates.
+    static let MenuBarMaxWidth = CGFloat(280)
 }
 
 /// UserDefaults keys, centralized to prevent typos.

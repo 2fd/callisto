@@ -27,6 +27,9 @@ struct Popover: View {
 }
 
 /// The renderable surface of the popover, separated from live data for previews.
+///
+/// Wrapped in ``PopoverChrome`` here rather than at the call site so previews and
+/// ``MenuBarPanel`` cannot drift apart — both render this exact surface.
 struct PopoverContent: View {
     let days: [EventDay]
     let hasReadableAccounts: Bool
@@ -36,23 +39,25 @@ struct PopoverContent: View {
     let isRefreshing: Bool
 
     var body: some View {
-        VStack(spacing: 0) {
-            PopoverHeader(
-                onSettings: onSettings,
-                onRefresh: onRefresh,
-                isRefreshing: isRefreshing
-            )
+        PopoverChrome {
+            VStack(spacing: 0) {
+                PopoverHeader(
+                    onSettings: onSettings,
+                    onRefresh: onRefresh,
+                    isRefreshing: isRefreshing
+                )
 
-            Divider()
-                .padding(.horizontal, 6)
+                Divider()
+                    .padding(.horizontal, 6)
 
-            if !hasReadableAccounts {
-                NoAccountsView(onManageAccount: onSettings)
-            } else {
-                EventListView(days: days, maxHeight: maxHeight)
+                if !hasReadableAccounts {
+                    NoAccountsView(onManageAccount: onSettings)
+                } else {
+                    EventListView(days: days, maxHeight: maxHeight)
+                }
             }
+            .frame(width: UI.Width)
         }
-        .frame(width: UI.Width)
     }
 }
 
@@ -63,18 +68,19 @@ private struct PopoverReferencePreview: View {
     var body: some View {
         let fixture = EventPreviewFixture.loaded()
 
-        PopoverContent(
-            days: fixture.days,
-            hasReadableAccounts: true,
-            maxHeight: 600,
-            onSettings: {},
-            onRefresh: {},
-            isRefreshing: false
-        )
-        .environment(fixture.eventManager)
-        .environment(fixture.eventManager.accounts)
-        .background(Color(nsColor: .windowBackgroundColor))
-        .preferredColorScheme(colorScheme)
+        MenuBarPreviewStage(colorScheme: colorScheme) {
+            PopoverContent(
+                days: fixture.days,
+                hasReadableAccounts: true,
+                maxHeight: 600,
+                onSettings: {},
+                onRefresh: {},
+                isRefreshing: false
+            )
+            .environment(fixture.eventManager)
+            .environment(fixture.eventManager.accounts)
+            .shadow(color: .black.opacity(0.35), radius: 12, y: 4)
+        }
     }
 }
 
