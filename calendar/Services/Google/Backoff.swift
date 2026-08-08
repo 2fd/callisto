@@ -35,3 +35,25 @@ nonisolated enum Backoff {
         return min(retryAfter, maximumDelay)
     }
 }
+
+/// How many times a request is retried, and how long to wait between attempts.
+///
+/// Injected so tests can exercise the retry loop without sleeping through real
+/// backoff intervals.
+nonisolated struct RetryPolicy: Sendable {
+
+    /// Attempts per request, including the first.
+    let maxAttempts: Int
+
+    /// Wait before retry number `attempt`, given any server-supplied delay.
+    let delay: @Sendable (_ attempt: Int, _ retryAfter: TimeInterval?) -> TimeInterval
+
+    /// Google's documented backoff, capped at four attempts.
+    ///
+    /// Google's guidance is to keep retrying at the capped interval, but a menu
+    /// bar app polling on a timer gets another chance next cycle, so a short
+    /// ceiling beats holding a task slot for minutes.
+    static let standard = RetryPolicy(maxAttempts: 4) { attempt, retryAfter in
+        Backoff.delay(forAttempt: attempt, retryAfter: retryAfter)
+    }
+}

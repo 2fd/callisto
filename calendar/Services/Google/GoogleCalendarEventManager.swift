@@ -713,7 +713,10 @@ final class GoogleCalendarEventManager {
   ///   window, so anything missing from them has been deleted upstream.
   ///   `.delta` responses contain only what changed, so absence means
   ///   "unchanged" — pruning by absence there would delete the entire calendar.
-  private func applySync(
+  ///
+  /// Internal rather than private so the merge rules can be tested directly;
+  /// reaching them through ``sync()`` would require a live Keychain.
+  func applySync(
     accountId: String,
     calendarId: String,
     fetched: [GCEvent],

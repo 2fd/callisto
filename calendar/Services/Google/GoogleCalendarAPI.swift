@@ -14,11 +14,20 @@ import os
 nonisolated struct GoogleCalendarAPI: CalendarAPI {
     private static let base = "https://www.googleapis.com/calendar/v3"
 
-    /// Attempts per request, including the first. Google's guidance is to keep
-    /// retrying at the capped interval, but a menu bar app polling on a timer
-    /// gets another chance every cycle, so a short ceiling is preferable to
-    /// holding a task group slot for minutes.
-    private static let maxAttempts = 4
+    private let session: URLSession
+    private let retryPolicy: RetryPolicy
+
+    /// - Parameters:
+    ///   - session: Defaults to ``defaultSession``; overridden in tests to
+    ///     serve canned responses.
+    ///   - retryPolicy: Defaults to ``RetryPolicy/standard``.
+    init(
+        session: URLSession = GoogleCalendarAPI.defaultSession,
+        retryPolicy: RetryPolicy = .standard
+    ) {
+        self.session = session
+        self.retryPolicy = retryPolicy
+    }
 
     /// Session shared by every request.
     ///
@@ -29,7 +38,7 @@ nonisolated struct GoogleCalendarAPI: CalendarAPI {
     /// `Accept-Encoding` — before it will compress a response.
     ///
     /// Reference: https://developers.google.com/workspace/calendar/api/guides/performance
-    private static let session: URLSession = {
+    static let defaultSession: URLSession = {
         let config = URLSessionConfiguration.default
         config.waitsForConnectivity = true
         config.timeoutIntervalForRequest = 30
@@ -499,16 +508,13 @@ nonisolated struct GoogleCalendarAPI: CalendarAPI {
                     accessToken: accessToken
                 )
             } catch let error as APIError where error.isRetryable {
-                guard attempt < Self.maxAttempts else {
+                guard attempt < retryPolicy.maxAttempts else {
                     await Logger.shared.error(
                         "GoogleCalendarAPI \(method, privacy: .public) \(path, privacy: .public) giving up after \(attempt, privacy: .public) attempts: \(error.localizedDescription, privacy: .public)"
                     )
                     throw error
                 }
-                let delay = Backoff.delay(
-                    forAttempt: attempt,
-                    retryAfter: error.retryAfter
-                )
+                let delay = retryPolicy.delay(attempt, error.retryAfter)
                 await Logger.shared.debug(
                     "GoogleCalendarAPI \(method, privacy: .public) \(path, privacy: .public) retry \(attempt, privacy: .public) in \(delay, privacy: .public)s"
                 )
@@ -546,7 +552,7 @@ nonisolated struct GoogleCalendarAPI: CalendarAPI {
         let data: Data
         let response: URLResponse
         do {
-            (data, response) = try await Self.session.data(for: req)
+            (data, response) = try await session.data(for: req)
         } catch is CancellationError {
             throw CancellationError()
         } catch {

@@ -68,7 +68,11 @@ extension Date {
         let now = Date.now
         let seconds = self.timeIntervalSince(now)
         let past = seconds <= 0
-        let absSeconds = abs(seconds)
+        // Rounded to the nearest second before the integer division below.
+        // An event exactly two hours out is measured a few microseconds after
+        // it was scheduled, giving 7199.99s — which truncates to 119 minutes
+        // and renders as "in 1 hour".
+        let absSeconds = abs(seconds).rounded()
 
         if absSeconds < 60 {
             return past ? "less than a minute ago" : "in less than a minute"
