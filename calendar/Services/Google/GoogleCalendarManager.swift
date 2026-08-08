@@ -82,6 +82,14 @@ final class GoogleCalendarManager {
     version &+= 1
   }
 
+  /// Stamps a calendar's `lastSyncedAt` after a successful event fetch for it.
+  func markSynced(calendarId: String) {
+    guard let calendar = get(calendarId: calendarId) else { return }
+    calendar.lastSyncedAt = .now
+    try? modelContext.save()
+    version &+= 1
+  }
+
   func logout(accountId: String) {
     let toRemove = calendars.filter { $0.accountId == accountId }
     for cal in toRemove { modelContext.delete(cal) }
@@ -109,10 +117,8 @@ final class GoogleCalendarManager {
             let entries = try await self.fetch(accountId: accountId)
             return (accountId, entries)
           } catch {
-            await self.handleReadFailure(accountId, error: error)
-            await Logger.shared.error(
-              "Calendar list fetch failed for \(accountId, privacy: .public): \(error.localizedDescription, privacy: .public)"
-            )
+            // Records health only — the cached calendar list is left intact.
+            await self.accounts.recordSyncFailure(accountId, error: error)
             return nil
           }
         }
@@ -128,6 +134,7 @@ final class GoogleCalendarManager {
     for (accountId, entries) in fetched {
       applySync(accountId: accountId, entries: entries)
       accounts.markSynced(accountId)
+      accounts.recordSyncSuccess(accountId)
       for entry in entries { results.append((accountId, entry.id)) }
     }
 
@@ -137,18 +144,12 @@ final class GoogleCalendarManager {
 
   /// Fetches the calendar list for a single account via the Google Calendar API.
   func fetch(accountId: String) async throws -> [GCCalendarListEntry] {
-    let token = try await accounts.token(for: accountId)
-    let response = try await api.listCalendars(accessToken: token)
-    return response.items
+    try await accounts.withToken(for: accountId) { token in
+      try await api.listCalendars(accessToken: token).items
+    }
   }
 
   // MARK: - Private
-
-  private func handleReadFailure(_ accountId: String, error: Error) {
-    guard error.isPermissionDenied else { return }
-    accounts.markReadPermissionDenied(accountId)
-    logout(accountId: accountId)
-  }
 
   private func applySync(accountId: String, entries: [GCCalendarListEntry]) {
     let existing = Dictionary(

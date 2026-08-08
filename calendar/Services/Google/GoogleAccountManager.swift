@@ -166,6 +166,10 @@ final class GoogleAccountManager {
   }
 
   /// Marks an account as missing calendar read permission.
+  ///
+  /// - Important: Call this only for a confirmed scope failure
+  ///   (``APIError/scopeDenied``), never for a transport, quota or server error.
+  ///   It hides every calendar and event the account owns from the UI.
   func markReadPermissionDenied(_ accountId: String) {
     guard let account = get(accountId), account.canRead else { return }
     account.canRead = false
@@ -186,25 +190,58 @@ final class GoogleAccountManager {
 
   /// Returns a valid access token for the account, refreshing if expired.
   /// Concurrent callers for the same account share a single refresh task.
-  func token(for accountId: String) async throws -> String {
-    if let existing = refreshTasks[accountId] {
+  ///
+  /// - Parameter forceRefresh: Refresh even when the cached token has not yet
+  ///   expired by the clock. Required to recover from a 401, where the token
+  ///   *looks* valid locally but Google has already invalidated it — clock skew,
+  ///   a server-side revocation, or a scope change all produce this.
+  ///   A forced refresh supersedes any in-flight coalesced refresh, since the
+  ///   caller has just seen a 401 for the token that one would return.
+  func token(for accountId: String, forceRefresh: Bool = false) async throws
+    -> String
+  {
+    if !forceRefresh, let existing = refreshTasks[accountId] {
       return try await existing.value
     }
     let task = Task<String, Error> {
       defer { refreshTasks[accountId] = nil }
-      return try await loadOrRefresh(accountId: accountId)
+      return try await loadOrRefresh(accountId: accountId, force: forceRefresh)
     }
     refreshTasks[accountId] = task
     return try await task.value
   }
 
-  /// Refreshes tokens for every account in parallel and returns the
-  /// IDs that survived. Errors are logged and dropped.
+  /// Runs `operation` with a valid access token for the account, and on a 401
+  /// forces a token refresh and retries exactly once.
+  ///
+  /// Google's documented action for `401 authError` is "get a new access token
+  /// using the long-lived refresh token" — a 401 is an instruction to refresh,
+  /// not a verdict on the account. Only a 401 that survives a fresh token is
+  /// escalated to the caller.
+  func withToken<T>(
+    for accountId: String,
+    _ operation: (String) async throws -> T
+  ) async throws -> T {
+    let token = try await token(for: accountId)
+    do {
+      return try await operation(token)
+    } catch let error as APIError where error.isAuthenticationFailure {
+      Logger.shared.info(
+        "Retrying with a forced token refresh for \(accountId, privacy: .public)"
+      )
+      let refreshed = try await self.token(for: accountId, forceRefresh: true)
+      return try await operation(refreshed)
+    }
+  }
+
+  /// Refreshes tokens for every syncable account in parallel and returns the
+  /// IDs that survived.
   ///
   /// Visibility is a display-only filter — all accounts sync regardless of
-  /// ``GoogleAccount/isVisible`` so re-enabling is instant.
+  /// ``GoogleAccount/isVisible`` so re-enabling is instant. Accounts inside a
+  /// backoff window are skipped for this cycle.
   func authenticated() async -> [String] {
-    let ids = accounts.filter(\.canRead).map(\.accountId)
+    let ids = accounts.filter(\.isSyncable).map(\.accountId)
 
     return await withTaskGroup(of: String?.self) { group in
       for id in ids {
@@ -214,7 +251,7 @@ final class GoogleAccountManager {
             await self?.markSynced(id)
             return id
           } catch {
-            await self?.logRefreshFailure(id, error: error)
+            await self?.recordSyncFailure(id, error: error)
             return nil
           }
         }
@@ -226,6 +263,87 @@ final class GoogleAccountManager {
       return surviving
     }
   }
+
+  // MARK: - Connection health
+
+  /// Records that an operation against this account succeeded, clearing any
+  /// throttle or failure state.
+  func recordSyncSuccess(_ accountId: String) {
+    guard let account = get(accountId) else { return }
+    guard account.syncState != .ok || account.consecutiveFailures > 0
+        || account.throttledUntil != nil
+    else { return }
+    account.syncState = .ok
+    account.throttledUntil = nil
+    account.consecutiveFailures = 0
+    account.lastSyncError = nil
+    try? modelContext.save()
+    bump()
+  }
+
+  /// Records a failed operation against this account.
+  ///
+  /// - Important: This never deletes cached calendars or events. A network
+  ///   failure says nothing about whether the data we already hold is correct,
+  ///   and dropping it turns a transient outage into a re-authorization prompt
+  ///   plus an empty popover.
+  func recordSyncFailure(_ accountId: String, error: Error) {
+    guard let account = get(accountId) else { return }
+
+    // Request-scoped refusals (wrong organizer, stale ETag, duplicate ID) say
+    // nothing about the connection and must not raise a warning on the account.
+    if let apiError = error as? APIError, !apiError.isAccountLevel {
+      Logger.shared.error(
+        "Request failed for \(accountId, privacy: .public): \(error.localizedDescription, privacy: .public)"
+      )
+      return
+    }
+
+    account.consecutiveFailures += 1
+    account.lastSyncError = error.localizedDescription
+
+    switch error {
+    case let apiError as APIError:
+      apply(apiError, to: account)
+    case let authError as AuthError:
+      // A refresh that Google rejected outright means the grant is gone.
+      account.syncState = authError.requiresReauthorization ? .needsReauth : .failing
+    default:
+      account.syncState = .failing
+    }
+
+    Logger.shared.error(
+      "Sync failure for \(accountId, privacy: .public) [\(account.syncStateRaw, privacy: .public)]: \(error.localizedDescription, privacy: .public)"
+    )
+    try? modelContext.save()
+    bump()
+  }
+
+  private func apply(_ error: APIError, to account: GoogleAccount) {
+    switch error {
+    case .throttled(_, let retryAfter):
+      account.syncState = .throttled
+      account.throttledUntil = .now.addingTimeInterval(
+        Backoff.delay(
+          forAttempt: account.consecutiveFailures,
+          retryAfter: retryAfter
+        )
+      )
+
+    case .scopeDenied:
+      // The only case that may narrow the grant — and even then the cache stays.
+      account.syncState = .needsReauth
+      markReadPermissionDenied(account.accountId)
+
+    case .needsReauth:
+      // Reached only after a forced refresh already failed to help.
+      account.syncState = .needsReauth
+
+    default:
+      account.syncState = .failing
+    }
+  }
+
 
   // MARK: - Sync tracking
 
@@ -278,21 +396,17 @@ final class GoogleAccountManager {
     return true
   }
 
-  private func logRefreshFailure(_ accountId: String, error: Error) {
-    Logger.shared.error(
-      "Token refresh failed for \(accountId, privacy: .public): \(error.localizedDescription, privacy: .public)"
-    )
-  }
-
   private func bump() {
     version &+= 1
   }
 
-  private func loadOrRefresh(accountId: String) async throws -> String {
+  private func loadOrRefresh(accountId: String, force: Bool = false) async throws
+    -> String
+  {
     var tokens = try KeychainService.load(for: accountId)
-    if tokens.isExpired {
+    if force || tokens.isExpired {
       Logger.shared.debug(
-        "Access token expired for \(accountId, privacy: .public), refreshing"
+        "Refreshing access token for \(accountId, privacy: .public) (forced: \(force, privacy: .public))"
       )
       tokens = try await refreshTokens(
         accountId: accountId,
@@ -494,8 +608,11 @@ final class GoogleAccountManager {
     if let http = response as? HTTPURLResponse,
       !(200...299).contains(http.statusCode)
     {
-      let body = String(data: data, encoding: .utf8) ?? ""
-      throw APIError.httpError(statusCode: http.statusCode, body: body)
+      throw APIError.classify(
+        statusCode: http.statusCode,
+        retryAfterHeader: http.value(forHTTPHeaderField: "Retry-After"),
+        body: data
+      )
     }
 
     return try JSONDecoder().decode(UserInfo.self, from: data)
@@ -521,6 +638,22 @@ nonisolated enum AuthError: LocalizedError, Sendable {
     case .refreshFailed(let detail): "Token refresh failed: \(detail)"
     case .userCancelled: "Authentication was cancelled."
     case .invalidState: "OAuth state validation failed."
+    }
+  }
+
+  /// Whether recovering requires the user to re-run the consent flow.
+  ///
+  /// Google answers a revoked, expired or superseded refresh token with
+  /// `invalid_grant`; every other refresh failure (offline, 5xx, malformed
+  /// response) is transient and must not cost the user their grant.
+  var requiresReauthorization: Bool {
+    switch self {
+    case .noRefreshToken, .invalidState, .missingAuthCode:
+      true
+    case .refreshFailed(let detail), .tokenExchangeFailed(let detail):
+      detail.localizedCaseInsensitiveContains("invalid_grant")
+    case .userCancelled:
+      false
     }
   }
 }

@@ -112,9 +112,48 @@ struct SettingsWindow: View {
     var body: some View {
       VStack(alignment: .leading, spacing: 8) {
         permissionStatus
+        connectionStatus
         authuserControls
       }
       .padding(.vertical, 2)
+    }
+
+    /// Surfaces transient sync trouble. Distinct from ``permissionStatus``,
+    /// which is about the grant: these states clear on their own once Google
+    /// answers again, and cached events stay on screen meanwhile.
+    @ViewBuilder
+    private var connectionStatus: some View {
+      switch account.syncState {
+      case .ok:
+        EmptyView()
+
+      case .needsReauth:
+        // `permissionStatus` already offers the re-grant button when canRead
+        // is false; only the credential-level case needs its own row.
+        if account.canRead {
+          PermissionActionRow(
+            title: "Reconnect this account",
+            message:
+              "Google rejected the saved credentials. Showing the last synced events until you reconnect.",
+            buttonTitle: isReauthorizing ? "Reconnecting…" : "Reconnect",
+            isDisabled: isReauthorizing,
+            action: grantReadPermission
+          )
+        }
+
+      case .throttled:
+        StatusNote(
+          icon: "clock.badge.exclamationmark",
+          message: "Google is rate limiting this account. Syncing will resume automatically."
+        )
+
+      case .failing:
+        StatusNote(
+          icon: "exclamationmark.triangle",
+          message: account.lastSyncError.map { "Last sync failed: \($0)" }
+            ?? "The last sync failed. Retrying automatically."
+        )
+      }
     }
 
     @ViewBuilder
@@ -223,6 +262,20 @@ struct SettingsWindow: View {
           .disabled(isDisabled)
           .eventHoverEffect()
       }
+    }
+  }
+
+  /// A non-actionable, self-clearing status line (throttling, transient failure).
+  private struct StatusNote: View {
+    let icon: String
+    let message: String
+
+    var body: some View {
+      Label(message, systemImage: icon)
+        .font(.caption)
+        .foregroundStyle(.secondary)
+        .labelStyle(.titleAndIcon)
+        .fixedSize(horizontal: false, vertical: true)
     }
   }
 

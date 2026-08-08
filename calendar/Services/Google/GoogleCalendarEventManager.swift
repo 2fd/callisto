@@ -197,7 +197,10 @@ final class GoogleCalendarEventManager {
             )
             return (accountId, calendarId, events)
           } catch {
-            await self.handleReadFailure(accountId: accountId, error: error)
+            // Records health only — cached events for this account are kept.
+            // A throttle, an outage or an expired token says nothing about
+            // whether the events already on disk are still correct.
+            await self.accounts.recordSyncFailure(accountId, error: error)
             await Logger.shared.error(
               "Event fetch failed \(accountId, privacy: .public)/\(calendarId, privacy: .public): \(error.localizedDescription, privacy: .public)"
             )
@@ -214,8 +217,9 @@ final class GoogleCalendarEventManager {
 
     for (accountId, calendarId, events) in fetched {
       applySync(accountId: accountId, calendarId: calendarId, fetched: events)
-      calendars.accounts.markSynced(calendarId)
+      calendars.markSynced(calendarId: calendarId)
       accounts.markSynced(accountId)
+      accounts.recordSyncSuccess(accountId)
     }
 
     resortEvents()
@@ -229,14 +233,14 @@ final class GoogleCalendarEventManager {
     timeMin: Date,
     timeMax: Date
   ) async throws -> [GCEvent] {
-    let token = try await accounts.token(for: accountId)
-    let response = try await api.listEvents(
-      calendarId: calendarId,
-      accessToken: token,
-      timeMin: timeMin,
-      timeMax: timeMax
-    )
-    return response.items
+    try await accounts.withToken(for: accountId) { token in
+      try await api.listEvents(
+        calendarId: calendarId,
+        accessToken: token,
+        timeMin: timeMin,
+        timeMax: timeMax
+      ).items
+    }
   }
 
   // MARK: - Mutations
@@ -391,10 +395,15 @@ final class GoogleCalendarEventManager {
     version &+= 1
   }
 
-  /// Updates account permission state after a failed event mutation.
+  /// Updates account state after a failed event mutation.
+  ///
+  /// Only a genuine scope failure narrows the grant — a 403 for quota, or a
+  /// 403 the user simply isn't the organizer for, must not revoke write access.
   func handleMutationFailure(_ event: GoogleCalendarEvent, error: Error) {
-    guard error.isPermissionDenied else { return }
-    accounts.markWritePermissionDenied(event.accountId)
+    if let apiError = error as? APIError, case .scopeDenied = apiError {
+      accounts.markWritePermissionDenied(event.accountId)
+    }
+    accounts.recordSyncFailure(event.accountId, error: error)
   }
 
   // MARK: - Mutation support
@@ -598,12 +607,6 @@ final class GoogleCalendarEventManager {
   }
 
   // MARK: - Private
-
-  private func handleReadFailure(accountId: String, error: Error) {
-    guard error.isPermissionDenied else { return }
-    accounts.markReadPermissionDenied(accountId)
-    logout(accountId: accountId)
-  }
 
   private func applySync(
     accountId: String,

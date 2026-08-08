@@ -378,7 +378,10 @@ nonisolated struct GoogleCalendarAPI: Sendable {
             components.queryItems = query
         }
         guard let url = components.url else {
-            throw APIError.httpError(statusCode: -1, body: "Invalid URL for \(path)")
+            throw APIError.invalidRequest(
+                reason: "malformedURL",
+                message: "Invalid URL for \(path)"
+            )
         }
 
         var req = URLRequest(url: url)
@@ -389,18 +392,29 @@ nonisolated struct GoogleCalendarAPI: Sendable {
             req.setValue("application/json", forHTTPHeaderField: "Content-Type")
         }
 
-        let (data, response) = try await URLSession.shared.data(for: req)
+        let data: Data
+        let response: URLResponse
+        do {
+            (data, response) = try await URLSession.shared.data(for: req)
+        } catch is CancellationError {
+            throw CancellationError()
+        } catch {
+            throw APIError.from(transportError: error)
+        }
 
         guard let http = response as? HTTPURLResponse else {
-            throw APIError.httpError(statusCode: -1, body: "No HTTP response")
+            throw APIError.transport("No HTTP response for \(path)")
         }
         if !(200...299).contains(http.statusCode) {
-            let body = String(data: data, encoding: .utf8) ?? ""
-            await Logger.shared.error(
-                "GoogleCalendarAPI \(method, privacy: .public) \(path, privacy: .public) HTTP \(http.statusCode): \(body, privacy: .public)"
+            let error = APIError.classify(
+                statusCode: http.statusCode,
+                retryAfterHeader: http.value(forHTTPHeaderField: "Retry-After"),
+                body: data
             )
-            if http.statusCode == 429 { throw APIError.rateLimited }
-            throw APIError.httpError(statusCode: http.statusCode, body: body)
+            await Logger.shared.error(
+                "GoogleCalendarAPI \(method, privacy: .public) \(path, privacy: .public) HTTP \(http.statusCode): \(error.localizedDescription, privacy: .public)"
+            )
+            throw error
         }
         return (data, http)
     }
