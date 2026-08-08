@@ -12,7 +12,7 @@ final class GoogleCalendarManager {
 
   let accounts: GoogleAccountManager
   private let modelContext: ModelContext
-  private let api = GoogleCalendarAPI()
+  private let api: any CalendarAPI
 
   private(set) var calendars: [GoogleCalendar] = []
   private var version: UInt64 = 0
@@ -21,8 +21,13 @@ final class GoogleCalendarManager {
     calendars.isEmpty
   }
 
-  init(accounts: GoogleAccountManager, container: ModelContainer) {
+  init(
+    accounts: GoogleAccountManager,
+    container: ModelContainer,
+    api: any CalendarAPI = GoogleCalendarAPI()
+  ) {
     self.accounts = accounts
+    self.api = api
     self.modelContext = ModelContext(container)
     self.calendars =
       (try? modelContext.fetch(FetchDescriptor<GoogleCalendar>())) ?? []

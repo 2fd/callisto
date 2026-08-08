@@ -14,6 +14,16 @@ enum Constants {
     /// Display-layer limits (``AppSettings/showDaysAhead``) are applied at render time,
     /// so the local SwiftData cache always has a full month of data available.
     static let syncFetchDays = 31
+
+    /// Maximum simultaneous Google Calendar requests for a single account.
+    ///
+    /// Google's rate limit is enforced per user per project (600 requests per
+    /// minute), so accounts do not contend with each other and only the
+    /// per-account fan-out needs pacing. A user with dozens of calendars would
+    /// otherwise open one connection per calendar every cycle.
+    ///
+    /// Reference: https://developers.google.com/workspace/calendar/api/guides/quota
+    static let maxConcurrentRequestsPerAccount = 4
 }
 
 enum UI {

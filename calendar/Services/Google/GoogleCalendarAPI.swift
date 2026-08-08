@@ -5,8 +5,41 @@ import os
 ///
 /// Stateless and ``Sendable`` — callers supply an access token per request.
 /// Non-2xx responses are surfaced as ``APIError``.
-nonisolated struct GoogleCalendarAPI: Sendable {
+///
+/// Owns the one retry policy in the app for failures that are purely about the
+/// transport: throttling, server errors, and dropped connections. Authentication
+/// retries deliberately live one layer up, in
+/// ``GoogleAccountManager/withToken(for:_:)``, because recovering from a 401
+/// requires the refresh token this type has no business knowing about.
+nonisolated struct GoogleCalendarAPI: CalendarAPI {
     private static let base = "https://www.googleapis.com/calendar/v3"
+
+    /// Attempts per request, including the first. Google's guidance is to keep
+    /// retrying at the capped interval, but a menu bar app polling on a timer
+    /// gets another chance every cycle, so a short ceiling is preferable to
+    /// holding a task group slot for minutes.
+    private static let maxAttempts = 4
+
+    /// Session shared by every request.
+    ///
+    /// `waitsForConnectivity` matters more here than in a typical client: the
+    /// app syncs immediately on wake from sleep, when the network interface is
+    /// often not up yet, and the default behavior is to fail instantly.
+    /// Google requires the literal string `gzip` in the User-Agent — not just
+    /// `Accept-Encoding` — before it will compress a response.
+    ///
+    /// Reference: https://developers.google.com/workspace/calendar/api/guides/performance
+    private static let session: URLSession = {
+        let config = URLSessionConfiguration.default
+        config.waitsForConnectivity = true
+        config.timeoutIntervalForRequest = 30
+        config.timeoutIntervalForResource = 120
+        config.httpAdditionalHeaders = [
+            "Accept-Encoding": "gzip",
+            "User-Agent": "\(AppInfo.displayName)/\(AppInfo.version) (gzip)",
+        ]
+        return URLSession(configuration: config)
+    }()
 
     // MARK: - Calendar list
 
@@ -366,7 +399,50 @@ nonisolated struct GoogleCalendarAPI: Sendable {
         )
     }
 
+    /// Issues the request, retrying the failures Google documents as transient.
+    ///
+    /// Retries only `.throttled`, `.server`, `.transport` and `.notFound` — the
+    /// rows of Google's error table whose prescribed action is backoff. A 400,
+    /// a scope failure or a dead sync cursor will never succeed on repetition
+    /// and are surfaced immediately.
     private func perform(
+        method: String,
+        path: String,
+        query: [URLQueryItem],
+        bodyData: Data?,
+        accessToken: String
+    ) async throws -> (Data, HTTPURLResponse) {
+        var attempt = 0
+        while true {
+            attempt += 1
+            do {
+                return try await send(
+                    method: method,
+                    path: path,
+                    query: query,
+                    bodyData: bodyData,
+                    accessToken: accessToken
+                )
+            } catch let error as APIError where error.isRetryable {
+                guard attempt < Self.maxAttempts else {
+                    await Logger.shared.error(
+                        "GoogleCalendarAPI \(method, privacy: .public) \(path, privacy: .public) giving up after \(attempt, privacy: .public) attempts: \(error.localizedDescription, privacy: .public)"
+                    )
+                    throw error
+                }
+                let delay = Backoff.delay(
+                    forAttempt: attempt,
+                    retryAfter: error.retryAfter
+                )
+                await Logger.shared.debug(
+                    "GoogleCalendarAPI \(method, privacy: .public) \(path, privacy: .public) retry \(attempt, privacy: .public) in \(delay, privacy: .public)s"
+                )
+                try await Task.sleep(for: .seconds(delay))
+            }
+        }
+    }
+
+    private func send(
         method: String,
         path: String,
         query: [URLQueryItem],
@@ -395,7 +471,7 @@ nonisolated struct GoogleCalendarAPI: Sendable {
         let data: Data
         let response: URLResponse
         do {
-            (data, response) = try await URLSession.shared.data(for: req)
+            (data, response) = try await Self.session.data(for: req)
         } catch is CancellationError {
             throw CancellationError()
         } catch {

@@ -13,7 +13,7 @@ final class GoogleCalendarEventManager {
   let accounts: GoogleAccountManager
   let calendars: GoogleCalendarManager
   private let modelContext: ModelContext
-  private let api = GoogleCalendarAPI()
+  private let api: any CalendarAPI
 
   private(set) var events: [GoogleCalendarEvent] = []
   private var version: UInt64 = 0
@@ -27,12 +27,14 @@ final class GoogleCalendarEventManager {
 
   // MARK: - Init
 
-  init(container: ModelContainer) {
+  init(container: ModelContainer, api: any CalendarAPI = GoogleCalendarAPI()) {
     self.accounts = GoogleAccountManager(container: container)
     self.calendars = GoogleCalendarManager(
       accounts: accounts,
-      container: container
+      container: container,
+      api: api
     )
+    self.api = api
     self.modelContext = ModelContext(container)
     self.events =
       (try? modelContext.fetch(
@@ -182,35 +184,45 @@ final class GoogleCalendarEventManager {
     let timeMin = cal.startOfDay(for: .now)
     let timeMax = cal.date(byAdding: .day, value: 31, to: timeMin)!
 
+    // Accounts run in parallel — the quota is per user, so they do not contend —
+    // while each account's calendars are paced to a bounded window.
+    let byAccount = Dictionary(grouping: pairs, by: { $0.0 })
+
     let fetched = await withTaskGroup(
-      of: (String, String, [GCEvent])?.self
+      of: [(String, String, [GCEvent])].self
     ) { group in
-      for (accountId, calendarId) in pairs {
+      for (accountId, accountPairs) in byAccount {
         group.addTask { [weak self] in
-          guard let self else { return nil }
-          do {
-            let events = try await self.fetch(
-              accountId: accountId,
-              calendarId: calendarId,
-              timeMin: timeMin,
-              timeMax: timeMax
-            )
-            return (accountId, calendarId, events)
-          } catch {
-            // Records health only — cached events for this account are kept.
-            // A throttle, an outage or an expired token says nothing about
-            // whether the events already on disk are still correct.
-            await self.accounts.recordSyncFailure(accountId, error: error)
-            await Logger.shared.error(
-              "Event fetch failed \(accountId, privacy: .public)/\(calendarId, privacy: .public): \(error.localizedDescription, privacy: .public)"
-            )
-            return nil
+          guard let self else { return [] }
+          return await withBoundedConcurrency(
+            over: accountPairs,
+            limit: Constants.maxConcurrentRequestsPerAccount
+          ) { pair in
+            let calendarId = pair.1
+            do {
+              let events = try await self.fetch(
+                accountId: accountId,
+                calendarId: calendarId,
+                timeMin: timeMin,
+                timeMax: timeMax
+              )
+              return (accountId, calendarId, events)
+            } catch {
+              // Records health only — cached events for this account are kept.
+              // A throttle, an outage or an expired token says nothing about
+              // whether the events already on disk are still correct.
+              await self.accounts.recordSyncFailure(accountId, error: error)
+              await Logger.shared.error(
+                "Event fetch failed \(accountId, privacy: .public)/\(calendarId, privacy: .public): \(error.localizedDescription, privacy: .public)"
+              )
+              return nil
+            }
           }
         }
       }
       var out: [(String, String, [GCEvent])] = []
       for await result in group {
-        if let result { out.append(result) }
+        out.append(contentsOf: result)
       }
       return out
     }
