@@ -56,31 +56,106 @@ nonisolated struct GoogleCalendarAPI: CalendarAPI {
 
     // MARK: - Events (read)
 
-    /// Fetches events on a single calendar within `[timeMin, timeMax]`.
+    /// Maximum page size the API accepts. The default is 250, so asking for the
+    /// ceiling turns a busy month into one round trip instead of ten.
+    ///
+    /// Reference: https://developers.google.com/workspace/calendar/api/v3/reference/events/list
+    static let maxPageSize = 2500
+
+    /// Fetches one page of events on a single calendar within `[timeMin, timeMax]`.
     ///
     /// `singleEvents=true` expands recurring series into individual instances;
-    /// `orderBy=startTime` is only valid in that mode.
+    /// `orderBy=startTime` is only valid in that mode. The time bounds are also
+    /// what keeps an infinitely recurring event from expanding without limit.
+    ///
+    /// - Parameters:
+    ///   - updatedMin: When set, returns only events modified since this time —
+    ///     the incremental mode. Google always includes entries deleted since
+    ///     this time regardless of `showDeleted`, so absence no longer implies
+    ///     deletion in the response and callers must not prune by absence.
+    ///   - pageToken: Continuation token from a previous page.
     ///
     /// Reference: https://developers.google.com/calendar/api/v3/reference/events/list
     func listEvents(
         calendarId: String,
         accessToken: String,
         timeMin: Date,
-        timeMax: Date
+        timeMax: Date,
+        updatedMin: Date? = nil,
+        showDeleted: Bool = false,
+        pageToken: String? = nil
     ) async throws -> GCEventsListResponse {
-        try await request(
+        var query = [
+            URLQueryItem(name: "timeMin", value: Self.iso8601.string(from: timeMin)),
+            URLQueryItem(name: "timeMax", value: Self.iso8601.string(from: timeMax)),
+            URLQueryItem(name: "singleEvents", value: "true"),
+            URLQueryItem(name: "orderBy", value: "startTime"),
+            URLQueryItem(name: "maxResults", value: String(Self.maxPageSize)),
+            URLQueryItem(name: "showDeleted", value: showDeleted ? "true" : "false"),
+        ]
+        if let updatedMin {
+            query.append(
+                URLQueryItem(name: "updatedMin", value: Self.iso8601.string(from: updatedMin))
+            )
+        }
+        if let pageToken {
+            query.append(URLQueryItem(name: "pageToken", value: pageToken))
+        }
+        return try await request(
             method: "GET",
             path: eventsPath(calendarId),
-            query: [
-                URLQueryItem(name: "timeMin", value: Self.iso8601.string(from: timeMin)),
-                URLQueryItem(name: "timeMax", value: Self.iso8601.string(from: timeMax)),
-                URLQueryItem(name: "singleEvents", value: "true"),
-                URLQueryItem(name: "orderBy", value: "startTime"),
-                URLQueryItem(name: "maxResults", value: "250"),
-            ],
+            query: query,
             accessToken: accessToken
         )
     }
+
+    /// Fetches every page of events for a calendar, following `nextPageToken`.
+    ///
+    /// A single page is not the whole answer: the API caps a page well below a
+    /// busy calendar's month and signals the remainder with `nextPageToken`.
+    /// Ignoring it silently truncates the result.
+    func listAllEvents(
+        calendarId: String,
+        accessToken: String,
+        timeMin: Date,
+        timeMax: Date,
+        updatedMin: Date? = nil,
+        showDeleted: Bool = false
+    ) async throws -> [GCEvent] {
+        var events: [GCEvent] = []
+        var pageToken: String?
+        var pages = 0
+
+        repeat {
+            let page = try await listEvents(
+                calendarId: calendarId,
+                accessToken: accessToken,
+                timeMin: timeMin,
+                timeMax: timeMax,
+                updatedMin: updatedMin,
+                showDeleted: showDeleted,
+                pageToken: pageToken
+            )
+            events.append(contentsOf: page.items)
+            pageToken = page.nextPageToken
+            pages += 1
+
+            // A cursor that never terminates would loop forever; bound it and
+            // say so rather than spinning.
+            if pages >= Self.maxPages, pageToken != nil {
+                await Logger.shared.error(
+                    "Stopped paging \(calendarId, privacy: .public) at \(pages, privacy: .public) pages with more results pending"
+                )
+                break
+            }
+        } while pageToken != nil
+
+        return events
+    }
+
+    /// Safety bound on pagination. At ``maxPageSize`` per page this is far more
+    /// than a month of any real calendar.
+    private static let maxPages = 20
 
     /// Fetches a single event by ID.
     ///

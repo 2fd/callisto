@@ -16,13 +16,19 @@ nonisolated protocol CalendarAPI: Sendable {
     /// Fetches the authenticated user's calendar list.
     func listCalendars(accessToken: String) async throws -> GCCalendarListResponse
 
-    /// Fetches events on a single calendar within `[timeMin, timeMax]`.
-    func listEvents(
+    /// Fetches every page of events on a calendar within `[timeMin, timeMax]`.
+    ///
+    /// `updatedMin` selects the incremental mode; see
+    /// ``GoogleCalendarAPI/listAllEvents(calendarId:accessToken:timeMin:timeMax:updatedMin:showDeleted:)``
+    /// for the pruning caveat that comes with it.
+    func listAllEvents(
         calendarId: String,
         accessToken: String,
         timeMin: Date,
-        timeMax: Date
-    ) async throws -> GCEventsListResponse
+        timeMax: Date,
+        updatedMin: Date?,
+        showDeleted: Bool
+    ) async throws -> [GCEvent]
 
     /// Fetches a single event by ID.
     func getEvent(

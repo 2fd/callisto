@@ -95,6 +95,59 @@ final class GoogleCalendarManager {
     version &+= 1
   }
 
+  /// Decides how the next event fetch for this calendar should be issued.
+  ///
+  /// A full read is required when there is no cursor, when the window has moved
+  /// to a new day (events that entered the window were not *modified*, so
+  /// `updatedMin` would not return them), or when the last full read is old
+  /// enough that a missed change would be worth catching.
+  func syncMode(for calendarId: String, windowStart: Date) -> EventSyncMode {
+    guard let calendar = get(calendarId: calendarId),
+      let cursor = calendar.lastDeltaSyncAt,
+      let lastFull = calendar.lastFullSyncAt,
+      calendar.syncWindowStart == windowStart,
+      Date.now.timeIntervalSince(lastFull) < Constants.fullSyncInterval
+    else {
+      return .full
+    }
+    // Re-ask for a small overlap so a change landing between the server's clock
+    // and ours cannot fall through the gap.
+    return .delta(since: cursor.addingTimeInterval(-Constants.deltaSyncOverlap))
+  }
+
+  /// Records the outcome of an event fetch against a calendar's cursor.
+  ///
+  /// `completedAt` is captured *before* the request goes out, so anything
+  /// modified while it was in flight is picked up by the next delta rather than
+  /// skipped.
+  func markEventsSynced(
+    calendarId: String,
+    mode: EventSyncMode,
+    windowStart: Date,
+    startedAt: Date
+  ) {
+    guard let calendar = get(calendarId: calendarId) else { return }
+    calendar.lastSyncedAt = .now
+    calendar.lastDeltaSyncAt = startedAt
+    calendar.syncWindowStart = windowStart
+    if case .full = mode {
+      calendar.lastFullSyncAt = .now
+    }
+    try? modelContext.save()
+    version &+= 1
+  }
+
+  /// Drops a calendar's incremental cursor, forcing a full read next cycle.
+  /// Called when Google reports the cursor is no longer usable (410).
+  func invalidateSyncCursor(calendarId: String) {
+    guard let calendar = get(calendarId: calendarId) else { return }
+    calendar.lastDeltaSyncAt = nil
+    calendar.lastFullSyncAt = nil
+    calendar.syncWindowStart = nil
+    try? modelContext.save()
+    version &+= 1
+  }
+
   func logout(accountId: String) {
     let toRemove = calendars.filter { $0.accountId == accountId }
     for cal in toRemove { modelContext.delete(cal) }

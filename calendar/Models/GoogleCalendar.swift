@@ -47,6 +47,30 @@ final class GoogleCalendar {
     /// Timestamp of the last successful fetch from `calendarList`, or `nil` if never synced.
     var lastSyncedAt: Date?
 
+    // MARK: - Incremental sync cursor
+
+    /// High-water mark handed to `events.list` as `updatedMin` on the next
+    /// incremental fetch, or `nil` when no delta has succeeded yet.
+    ///
+    /// Google's `syncToken` cannot be used here: it is rejected (400) alongside
+    /// `timeMin`/`timeMax`, and the token freezes whatever bounds the initial
+    /// sync used — which a rolling `[today, today + 31d]` window cannot accept,
+    /// since events entering the window as days pass would never be delivered.
+    /// `updatedMin` composes with the window and gives the same "only what
+    /// changed" result.
+    ///
+    /// Reference: https://developers.google.com/workspace/calendar/api/v3/reference/events/list
+    var lastDeltaSyncAt: Date?
+
+    /// When the whole window was last re-read from Google.
+    var lastFullSyncAt: Date?
+
+    /// Start of the day the cached window is anchored to. When the calendar day
+    /// rolls over, the window moves and the delta cursor no longer covers it —
+    /// events newly inside the window were not *modified*, so `updatedMin`
+    /// would not return them.
+    var syncWindowStart: Date?
+
     // MARK: - Computed
 
     var displayName: String { summaryOverride ?? summary }
