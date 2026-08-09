@@ -20,7 +20,9 @@ A fast, static marketing homepage built with Astro and deployed to Cloudflare Wo
 homepage/
 ├── src/
 │   ├── components/ui/      # Reusable UI components (Button, Card, etc.)
+│   ├── components/marketing/  # Landing page sections and app previews
 │   ├── lib/
+│   │   ├── calendarRow.ts  # Port of the app's event-row colors and rules
 │   │   └── utils.ts        # cn() helper — clsx + tailwind-merge
 │   ├── pages/
 │   │   └── index.astro     # Landing page
@@ -41,6 +43,8 @@ homepage/
 - **Tailwind v4 `@theme inline`:** All design tokens live in `src/styles/global.css`. No separate Tailwind config file.
 - **Astro components for UI primitives:** Button, Card, and card subcomponents are `.astro` files using CVA for variant logic. No React or other JS framework.
 - **Path alias `@/*`:** Maps to `./src/*` in both TypeScript and Vite.
+- **App previews are ported, not eyeballed:** `AppPanel`, `AppDayHeader` and `AppEventRow` reproduce the menu bar panel at its real width (280pt) with the real paddings, and take every colour from `src/lib/calendarRow.ts` — a port of the app's `ColorPalette`, `Color.toned(_:forDarkSurface:)`, `Color.readable(on:)` and `EventRowStyle`. When those move in `calendar/`, move them here.
+- **No leading-`|` unions in `.astro` frontmatter:** the Astro compiler rejects them, and Prettier writes them whenever a union wraps. Derive the type instead (see `BadgeKind` in `AppEventRow.astro`).
 - **Cloudflare Workers static assets:** Wrangler serves the `dist` output directly, with no Worker entrypoint or bindings.
 
 ## Design Tokens

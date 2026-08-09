@@ -1,63 +1,257 @@
 ---
-import { MapPin, Video } from "@lucide/astro";
+/**
+ * One row of the app's event list, drawn the way `EventRow` draws it: a solid
+ * block of the event's own Google Calendar color, with the text color that
+ * survives on top of it.
+ *
+ * Everything visual comes from `rowStyle()`, the port of `EventRowStyle` — this
+ * component only lays it out, exactly as the app's view does.
+ */
+import {
+  CircleMinus,
+  Gift,
+  MapPin,
+  TriangleAlert,
+  UserRoundX,
+  Video,
+} from "@lucide/astro";
+import { rowStyle, type RowTreatment } from "@/lib/calendarRow";
 
 export type ConferenceKind = "zoom" | "meet" | "other";
 
-/** Provider colors mirror `GoogleCalendarEvent.conferenceColor` in the app. */
-const conferenceColors: Record<ConferenceKind, string> = {
-  zoom: "#2D8CFF",
-  meet: "#FED812",
-  other: "#34A853",
-};
+/**
+ * The badges an event can earn, declared in the order `EventBadge.all` lays
+ * them out — key order is what the row iterates.
+ */
+const badgeIcons = {
+  outOfOffice: { icon: CircleMinus, help: "out of office" },
+  birthday: { icon: Gift, help: "birthday" },
+  important: { icon: TriangleAlert, help: "important" },
+  allDeclined: { icon: UserRoundX, help: "all attendees declined" },
+} as const;
+
+export type BadgeKind = keyof typeof badgeIcons;
 
 interface Props {
   title: string;
-  time: string;
-  /** Calendar color shown as the leading bar. */
+  /** The event's hours, e.g. "11:00 - 12:00". Omitted on an all-day row. */
+  time?: string;
+  /** The event's color, untoned — a Google palette value. */
   color?: string;
-  conference?: ConferenceKind;
+  treatment?: RowTreatment;
+  /** Tentative: diagonal stripes over the fill. */
+  tentative?: boolean;
+  /** Declined or cancelled: the title and hours are struck through. */
+  struckThrough?: boolean;
+  past?: boolean;
+  /** All-day and out-of-office rows say everything on one line. */
+  compact?: boolean;
+  /** A timed out-of-office row carries its hours in the header instead. */
+  inlineTime?: boolean;
   location?: string;
+  conference?: ConferenceKind;
+  badges?: BadgeKind[];
   /** Renders the row as hovered — the state the pointer is on. */
-  active?: boolean;
+  hover?: boolean;
   class?: string;
 }
 
 const {
   title,
   time,
-  color = "#E67C73",
-  conference,
+  color,
+  treatment = "filled",
+  tentative = false,
+  struckThrough = false,
+  past = false,
+  compact = false,
+  inlineTime = false,
   location,
-  active = false,
+  conference,
+  badges = [],
+  hover = false,
   class: className,
 } = Astro.props;
+
+const style = rowStyle({ color, treatment, tentative, struckThrough, past });
+
+const shownBadges = (Object.keys(badgeIcons) as BadgeKind[]).filter((badge) =>
+  badges.includes(badge),
+);
+
+/** The fill's opacity: dimmed under the pointer, as in `fillOpacity`. */
+const fillOpacity = hover ? 0.85 : 1;
+const stripeOpacity = hover ? 0.28 : 0.18;
+
+const fill = `rgb(${style.tint})`;
+const sheen = `linear-gradient(90deg,
+  rgb(${style.onTint} / 0) 0%,
+  rgb(${style.onTint} / 0.16) 34%,
+  rgb(${style.onTint} / 0.32) 50%,
+  rgb(${style.onTint} / 0.16) 66%,
+  rgb(${style.onTint} / 0) 100%)`;
+const stripes = `repeating-linear-gradient(135deg,
+  rgb(${style.onTint} / ${stripeOpacity}) 0 6px,
+  transparent 6px 18px)`;
 ---
 
 <div
-  class:list={[
-    "flex items-center gap-3 rounded-xs px-2 py-1.5 transition-colors duration-hover",
-    active && "bg-light/[0.09]",
-    className,
-  ]}
+  class:list={["relative", className]}
+  style={`opacity:${style.contentOpacity}`}
 >
-  <span
-    class="h-9 w-1 shrink-0 rounded-full"
-    style={`background-color:${color}`}></span>
-
-  <div class="min-w-0 flex-1">
-    <p class="truncate text-sm font-medium leading-5 text-light">{title}</p>
-    <p class="mt-0.5 text-xs leading-4 text-light/52">{time}</p>
-  </div>
-
-  <div class="flex shrink-0 items-center gap-2">
-    {location && <MapPin class="size-3 text-light/45" />}
-    {
-      conference && (
-        <Video
-          class="size-3.5"
-          style={`color:${conferenceColors[conference]}`}
+  {
+    /* The fill is inset 4px from the row edge, so the content padding below
+      keeps the text off it — the same offsets the app uses. */
+  }
+  {
+    treatment === "ongoing" && (
+      <div
+        class="absolute inset-y-0 right-1 left-1 overflow-hidden rounded-[6px]"
+        style={`background:${fill};opacity:${hover ? 0.9 : 1}`}
+      >
+        <div
+          class="sheen absolute inset-y-0 w-[58%]"
+          style={`background:${sheen}`}
         />
+      </div>
+    )
+  }
+
+  {
+    treatment === "bordered" && (
+      <>
+        <div
+          class="absolute inset-y-0 right-1 left-1 rounded-xs bg-light/[0.05]"
+          style={`opacity:${hover ? 0.85 : 1}`}
+        />
+        <div
+          class="absolute inset-y-0 right-1 left-1 rounded-xs border"
+          style={`border-color:rgb(${style.tint} / 0.5)`}
+        />
+      </>
+    )
+  }
+
+  {
+    treatment === "filled" && (
+      <>
+        <div
+          class="absolute inset-y-0 right-1 left-1 rounded-[6px]"
+          style={`background:${fill};opacity:${fillOpacity}`}
+        />
+        {/* Drawn over the fill rather than under it, so the pattern still
+          reads once the row is opaque. */}
+        {style.isStriped && (
+          <div
+            class="absolute inset-y-0 right-1 left-1 rounded-[6px]"
+            style={`background:${stripes}`}
+          />
+        )}
+      </>
+    )
+  }
+
+  <div class="relative flex flex-col gap-0.5 py-1 pr-2.5 pl-3.5">
+    <div class="flex items-center gap-2">
+      <span
+        class:list={[
+          "min-w-0 flex-1 truncate text-[13px] leading-4",
+          style.isStruckThrough && "line-through",
+        ]}
+        style={`color:${style.title};font-weight:${style.titleWeight}`}
+      >
+        {title}
+      </span>
+
+      {
+        inlineTime && time && (
+          <span
+            class:list={[
+              "shrink-0 text-[10px] leading-3",
+              style.isStruckThrough && "line-through",
+            ]}
+            style={`color:${style.detail}`}
+          >
+            {time}
+          </span>
+        )
+      }
+
+      {
+        shownBadges.map((badge) => {
+          const Badge = badgeIcons[badge].icon;
+          return (
+            <Badge
+              class="size-3 shrink-0"
+              title={badgeIcons[badge].help}
+              style={
+                badge === "important"
+                  ? "color:#FFD60A"
+                  : `color:${style.detail}`
+              }
+            />
+          );
+        })
+      }
+    </div>
+
+    {
+      !compact && (
+        <div class="flex items-center gap-2" style={`color:${style.detail}`}>
+          <span
+            class:list={[
+              "flex-1 text-[10px] leading-3",
+              style.isStruckThrough && "line-through",
+            ]}
+          >
+            {time}
+          </span>
+
+          {style.showsAccessories && location && (
+            <MapPin class="size-2.5 shrink-0 opacity-70" title={location} />
+          )}
+
+          {style.showsAccessories &&
+            conference &&
+            (conference === "other" ? (
+              <Video class="size-3.5 shrink-0" title="Has meeting link" />
+            ) : (
+              <span
+                class="shrink-0 text-[10px] leading-3 font-bold"
+                title={`Has ${conference} link`}
+              >
+                {conference}
+              </span>
+            ))}
+        </div>
       )
     }
   </div>
 </div>
+
+<style>
+  /* One sweep across the row, then a pause parked off the trailing edge —
+     the cycle `OngoingEventBackground` runs: 2.4s of travel, 1.6s of rest. */
+  @keyframes callisto-sheen {
+    0% {
+      transform: translateX(-100%);
+    }
+    60%,
+    100% {
+      transform: translateX(272%);
+    }
+  }
+
+  .sheen {
+    animation: callisto-sheen 4s linear infinite;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .sheen {
+      /* Where the band sits at the midpoint of its sweep, which is what the
+         app parks it at when motion is reduced. */
+      animation: none;
+      transform: translateX(86%);
+    }
+  }
+</style>
