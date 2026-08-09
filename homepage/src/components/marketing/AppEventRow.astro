@@ -1,0 +1,63 @@
+---
+import { MapPin, Video } from "@lucide/astro";
+
+export type ConferenceKind = "zoom" | "meet" | "other";
+
+/** Provider colors mirror `GoogleCalendarEvent.conferenceColor` in the app. */
+const conferenceColors: Record<ConferenceKind, string> = {
+  zoom: "#2D8CFF",
+  meet: "#FED812",
+  other: "#34A853",
+};
+
+interface Props {
+  title: string;
+  time: string;
+  /** Calendar color shown as the leading bar. */
+  color?: string;
+  conference?: ConferenceKind;
+  location?: string;
+  /** Renders the row as hovered — the state the pointer is on. */
+  active?: boolean;
+  class?: string;
+}
+
+const {
+  title,
+  time,
+  color = "#E67C73",
+  conference,
+  location,
+  active = false,
+  class: className,
+} = Astro.props;
+---
+
+<div
+  class:list={[
+    "flex items-center gap-3 rounded-xs px-2 py-1.5 transition-colors duration-hover",
+    active && "bg-light/[0.09]",
+    className,
+  ]}
+>
+  <span
+    class="h-9 w-1 shrink-0 rounded-full"
+    style={`background-color:${color}`}></span>
+
+  <div class="min-w-0 flex-1">
+    <p class="truncate text-sm font-medium leading-5 text-light">{title}</p>
+    <p class="mt-0.5 text-xs leading-4 text-light/52">{time}</p>
+  </div>
+
+  <div class="flex shrink-0 items-center gap-2">
+    {location && <MapPin class="size-3 text-light/45" />}
+    {
+      conference && (
+        <Video
+          class="size-3.5"
+          style={`color:${conferenceColors[conference]}`}
+        />
+      )
+    }
+  </div>
+</div>

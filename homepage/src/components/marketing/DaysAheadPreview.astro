@@ -1,0 +1,53 @@
+---
+import { Check } from "@lucide/astro";
+
+/** Mirrors `daysAheadOptions` in the app's Settings window. */
+const options = [
+  "1 day",
+  "2 days",
+  "3 days",
+  "1 week",
+  "2 weeks",
+  "1 month",
+] as const;
+
+const selected = "1 week";
+---
+
+<div class="w-full max-w-[320px] space-y-3 lg:max-w-none">
+  <div
+    class="flex items-center justify-between gap-4 rounded-sm bg-light/[0.07] px-3 py-2.5 shadow-elevation-1 ring-1 ring-foreground/[0.07]"
+  >
+    <div>
+      <p class="text-sm font-medium text-light">Days Ahead</p>
+      <p class="mt-0.5 text-xs text-light/52">How far ahead to show.</p>
+    </div>
+    <span
+      class="shrink-0 rounded-xs bg-light/[0.09] px-2.5 py-1 text-xs font-medium text-light ring-1 ring-foreground/12"
+    >
+      {selected}
+    </span>
+  </div>
+
+  <div
+    class="w-[168px] rounded-sm bg-[#22222F]/95 p-1.5 shadow-elevation-3 ring-1 ring-foreground/12"
+  >
+    {
+      options.map((option) => (
+        <div
+          class:list={[
+            "flex items-center gap-2 rounded-xs px-2 py-1 text-sm",
+            option === selected
+              ? "bg-primary/15 text-primary"
+              : "text-light/82",
+          ]}
+        >
+          <span class="flex size-3.5 shrink-0 items-center justify-center">
+            {option === selected && <Check class="size-3" />}
+          </span>
+          {option}
+        </div>
+      ))
+    }
+  </div>
+</div>

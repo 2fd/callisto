@@ -26,10 +26,21 @@ const surfaceClass = surface === "muted" ? "bg-surface/45" : "bg-surface/55";
 >
   {gradientClass && <div class:list={["absolute", gradientClass]} />}
   <div
-    class="relative grid min-h-[220px] items-center gap-8 px-8 py-9 md:px-16 lg:grid-cols-[112px_minmax(0,330px)_1fr] lg:gap-8 lg:px-[88px]"
+    class="relative mx-auto grid min-h-[220px] max-w-[520px] items-center gap-8 px-6 py-9 sm:px-8 md:max-w-none md:grid-cols-2 md:px-10 lg:grid-cols-[minmax(0,1fr)_auto] lg:gap-8 lg:px-16"
   >
-    <slot name="icon" />
     <slot name="copy" />
-    <slot name="visual" />
+    {
+      /* Previews vary in width, so pinning them to the same edge is what keeps
+        them lined up down the page. Right below the section padding once the
+        visual has its own column; left while the section is still stacked, so
+        it stays with the copy. */
+    }
+    <div class="flex justify-start md:justify-end">
+      <div
+        class="flex w-full max-w-[404px] justify-start md:justify-end lg:w-[480px] lg:max-w-none"
+      >
+        <slot name="visual" />
+      </div>
+    </div>
   </div>
 </section>

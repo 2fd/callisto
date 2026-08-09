@@ -4,34 +4,26 @@ import SiteHeader from "@/components/marketing/SiteHeader.astro";
 import HeroSection from "@/components/marketing/HeroSection.astro";
 import DownloadButton from "@/components/marketing/DownloadButton.astro";
 import FeatureSection from "@/components/marketing/FeatureSection.astro";
-import FeatureIconTile from "@/components/marketing/FeatureIconTile.astro";
 import SectionCopy from "@/components/marketing/SectionCopy.astro";
-import ReminderPreview from "@/components/marketing/ReminderPreview.astro";
-import FocusPreview from "@/components/marketing/FocusPreview.astro";
-import WeekCalendarPreview from "@/components/marketing/WeekCalendarPreview.astro";
-import SyncDevicesPreview from "@/components/marketing/SyncDevicesPreview.astro";
+import JoinCallPreview from "@/components/marketing/JoinCallPreview.astro";
+import ConferenceKindPreview from "@/components/marketing/ConferenceKindPreview.astro";
+import QuickActionsPreview from "@/components/marketing/QuickActionsPreview.astro";
+import AccountLinksPreview from "@/components/marketing/AccountLinksPreview.astro";
+import DaysAheadPreview from "@/components/marketing/DaysAheadPreview.astro";
 import CallistoMark from "@/components/brand/CallistoMark.astro";
 import jupiterVideo from "@/assets/jupiter.mp4";
-import { MousePointerClick } from "@lucide/astro";
 ---
 
 <MarketingLayout>
-  <Fragment slot="fixed-background"> </Fragment>
-  <video
-    class="fixed left-1/2 h-250 w-250 object-cover opacity-75 jupiter"
-    src={jupiterVideo}
-    autoplay
-    muted
-    loop
-    playsinline></video>
-  <div
-    class="pointer-events-none fixed left-1/2 h-250 w-250 bg-[radial-gradient(circle,transparent_35%,#0e0e16_85%)] jupiter"
-  >
-  </div>
-  <div
-    class="pointer-events-none fixed left-1/2 h-250 w-250 bg-[radial-gradient(farthest-corner_at_0_25%,transparent_35%,#0e0e16_60%)] jupiter"
-  >
-  </div>
+  <Fragment slot="fixed-background">
+    <video
+      class="pointer-events-none object-cover opacity-75 jupiter"
+      src={jupiterVideo}
+      autoplay
+      muted
+      loop
+      playsinline></video>
+  </Fragment>
 
   <Fragment slot="hero">
     <!-- Hero -->
@@ -41,7 +33,7 @@ import { MousePointerClick } from "@lucide/astro";
         <Fragment slot="copy">
           <div>
             <h1
-              class="mb-8 font-sans text-[2.7rem] font-medium leading-[1.12] tracking-[-0.045em] text-light md:text-[3.55rem] lg:text-[3.75rem]"
+              class="mb-8 font-sans text-[2.15rem] font-medium leading-[1.12] tracking-[-0.045em] text-light sm:text-[2.7rem] md:text-[3.55rem] lg:text-[3.75rem]"
             >
               <span>Menu Bar Calendar</span><br />
               <span class="text-primary">optimized for meetings</span>
@@ -74,133 +66,83 @@ import { MousePointerClick } from "@lucide/astro";
             >
           </a>
         </Fragment>
-
-        <Fragment slot="visual">
-          <!-- <HeroCalendarPreview /> -->
-        </Fragment>
       </HeroSection>
     </section>
   </Fragment>
 
   <!-- Features -->
   <div id="features" class="flex flex-col gap-3 relative z-50">
-    <!-- Smart Reminders -->
+    <!-- Click to join -->
     <FeatureSection
       gradientClass="inset-0 bg-[radial-gradient(circle_at_85%_50%,rgba(255,176,138,0.08),transparent_30%)]"
     >
-      <FeatureIconTile slot="icon">
-        <MousePointerClick class="size-12 text-primary" />
-      </FeatureIconTile>
-
       <SectionCopy
         slot="copy"
-        eyebrow="Direct access"
-        heading="One click away form your meetings"
-        description="Luna helps you start your day with clarity. Smart reminders and time awareness keep you focused without the noise."
+        eyebrow="One click"
+        heading="Click the event,<br />you are in the call"
+        description="Callisto pulls the Zoom or Meet link out of the invite and opens it. No conference link on the event? The click opens it in Google Calendar instead."
       />
 
-      <div slot="visual" class="flex justify-start lg:justify-end">
-        <ReminderPreview />
-      </div>
+      <JoinCallPreview slot="visual" />
     </FeatureSection>
 
-    <!-- Focus Sessions -->
+    <!-- Zoom vs Meet -->
     <FeatureSection
       surface="muted"
       gradientClass="inset-y-0 right-0 w-1/2 bg-[radial-gradient(circle_at_52%_50%,rgba(255,176,138,0.08),transparent_42%)]"
     >
-      <FeatureIconTile slot="icon">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          class="size-12"
-          viewBox="0 0 24 24"
-          fill="#FFB08A"
-          aria-hidden="true"
-        >
-          <path d="M13.7 2.7 4 14h7.2l-.9 7.3L20 10h-7.2l.9-7.3Z"></path>
-        </svg>
-      </FeatureIconTile>
-
       <SectionCopy
         slot="copy"
-        eyebrow="Quick Actions"
-        heading=""
-        description="Block distractions and protect your most important work with Focus Sessions. You set the time, Luna holds the line."
+        eyebrow="Zoom or Meet"
+        heading="Know which call<br />before you click"
+        description="Every event carrying a conference link is marked in its provider's color, so Zoom and Google Meet never look alike in the list."
       />
 
-      <div slot="visual" class="flex justify-start lg:justify-center">
-        <FocusPreview />
-      </div>
+      <ConferenceKindPreview slot="visual" />
     </FeatureSection>
 
-    <!-- Calendar View -->
+    <!-- Right-click quick actions -->
     <FeatureSection
       id="design"
       gradientClass="inset-0 bg-[radial-gradient(circle_at_70%_45%,rgba(43,43,61,0.32),transparent_35%)]"
     >
-      <FeatureIconTile slot="icon">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          class="size-12"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="#FFB08A"
-          stroke-width="1.35"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          aria-hidden="true"
-        >
-          <circle cx="12" cy="12" r="9"></circle>
-          <circle cx="12" cy="12" r="5.3"></circle>
-          <circle cx="12" cy="12" r="2.2" fill="#FFB08A"></circle>
-        </svg>
-      </FeatureIconTile>
-
       <SectionCopy
         slot="copy"
-        eyebrow="See your day"
-        heading="A calendar that puts<br />your day in focus"
-        description="Luna's calendar view is designed for how you actually work. Clean, minimal, and built for day-to-day meetings."
+        eyebrow="Quick actions"
+        heading="Right-click for<br />everything else"
+        description="Accept, maybe or decline. Copy an attendee's address. Open in Calendar, or delete. On a recurring event, pick this one or this and every one after it."
       />
 
-      <div slot="visual" class="flex justify-start lg:justify-end">
-        <WeekCalendarPreview />
-      </div>
+      <QuickActionsPreview slot="visual" />
     </FeatureSection>
 
-    <!-- Sync -->
+    <!-- Multiple accounts / authuser -->
     <FeatureSection
       surface="muted"
       gradientClass="inset-y-0 right-0 w-1/2 bg-[radial-gradient(circle_at_50%_45%,rgba(255,176,138,0.07),transparent_40%)]"
     >
-      <FeatureIconTile slot="icon">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          class="size-12"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="#FFB08A"
-          stroke-width="1.35"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          aria-hidden="true"
-        >
-          <path
-            d="M6 18.5h11.2a4 4 0 0 0 .55-7.97A6.2 6.2 0 0 0 6.1 8.22 4.9 4.9 0 0 0 6 18.5Z"
-          ></path>
-        </svg>
-      </FeatureIconTile>
-
       <SectionCopy
         slot="copy"
-        eyebrow="Always in sync"
-        heading="Seamless across<br />your devices"
-        description="Luna syncs effortlessly with iCloud, so your schedule is always up to date wherever you are."
+        eyebrow="Multiple accounts"
+        heading="Links open as the<br />right you"
+        description="Set the Google profile index for each connected account. Callisto stamps it on every calendar and meeting link, so you land in the call instead of an account picker."
       />
 
-      <div slot="visual" class="flex justify-start lg:justify-end">
-        <SyncDevicesPreview />
-      </div>
+      <AccountLinksPreview slot="visual" />
+    </FeatureSection>
+
+    <!-- Days ahead -->
+    <FeatureSection
+      gradientClass="inset-0 bg-[radial-gradient(circle_at_78%_50%,rgba(255,176,138,0.07),transparent_32%)]"
+    >
+      <SectionCopy
+        slot="copy"
+        eyebrow="Your horizon"
+        heading="See as far ahead<br />as you need"
+        description="The next day, the next week, the next month — you choose how much of the schedule the panel shows, and it stays that short."
+      />
+
+      <DaysAheadPreview slot="visual" />
     </FeatureSection>
   </div>
 
@@ -226,11 +168,11 @@ import { MousePointerClick } from "@lucide/astro";
           id="footer-heading"
           class="font-sans text-2xl font-medium tracking-[-0.03em] text-light md:text-3xl"
         >
-          Ready to take control of your day?
+          Ready to stop hunting for meeting links?
         </h2>
         <p class="mt-2 max-w-[500px] text-base leading-6 text-light/66">
-          Download Luna for macOS and experience a calmer, more focused way to
-          work.
+          Download Callisto for macOS and keep every call one click from the
+          menu bar.
         </p>
       </div>
 

@@ -1,0 +1,29 @@
+---
+import { MousePointer2 } from "@lucide/astro";
+import AppPanel from "@/components/marketing/AppPanel.astro";
+import AppEventRow from "@/components/marketing/AppEventRow.astro";
+---
+
+<div class="relative w-full max-w-[340px] lg:max-w-none">
+  <AppPanel heading="Today">
+    <AppEventRow title="Morning standup" time="9:30 – 9:45" conference="meet" />
+    <AppEventRow
+      title="Design review"
+      time="11:00 – 12:00"
+      color="#33B679"
+      conference="zoom"
+      active
+    />
+    <AppEventRow title="1:1 with Sam" time="16:00 – 16:30" location="Room 4B" />
+  </AppPanel>
+
+  <MousePointer2
+    class="absolute left-[52%] top-[52%] size-5 fill-light text-night drop-shadow-[0_2px_6px_rgba(0,0,0,0.55)]"
+  />
+
+  <div
+    class="absolute left-[56%] top-[60%] whitespace-nowrap rounded-xs bg-primary px-2 py-1 text-[0.7rem] font-semibold text-primary-foreground shadow-elevation-2"
+  >
+    Opening Zoom…
+  </div>
+</div>
