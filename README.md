@@ -10,7 +10,7 @@ A lightweight macOS menu bar app for viewing Google Calendar events.
 - **Background sync** — automatic polling at a configurable interval (1–10 minutes)
 - **Keychain security** — OAuth tokens are stored exclusively in the macOS Keychain
 - **Per-calendar visibility** — show or hide individual calendars from the event list
-- **No external dependencies** — built entirely with Apple frameworks (SwiftUI, SwiftData, CryptoKit, Security, AuthenticationServices)
+- **No external dependencies** — built entirely with Apple frameworks (SwiftUI, SwiftData, CryptoKit, Security, AppKit)
 
 ## Requirements
 
@@ -86,7 +86,7 @@ calendar/
 ├── App/                        # App entry point, AppDelegate, menu bar + settings window setup
 ├── Models/                     # SwiftData models (Account, GoogleCalendar, CalendarEvent)
 ├── Services/
-│   ├── Auth/                   # Google OAuth 2.0 with PKCE via ASWebAuthenticationSession
+│   ├── Auth/                   # Google OAuth 2.0 with PKCE, consent in the system browser
 │   ├── Keychain/               # Keychain wrapper for secure token storage
 │   └── GoogleCalendar/         # API client, sync service, background sync manager
 │       └── DTOs/               # Codable response types for the Google Calendar API
@@ -104,7 +104,7 @@ calendar/
 |-------|---------------|
 | **App** | Bootstraps the `MenuBarExtra` and settings `Window`, creates the SwiftData container |
 | **Models** | SwiftData `@Model` classes representing accounts, calendars, and events |
-| **Services** | All business logic — OAuth via `ASWebAuthenticationSession`, Keychain access, API calls, sync orchestration |
+| **Services** | All business logic — OAuth in the system browser, Keychain access, API calls, sync orchestration |
 | **Views** | SwiftUI views for the popover and settings window, broken into focused subviews |
 | **Utilities** | Stateless helpers for date formatting and color parsing |
 
@@ -112,7 +112,7 @@ calendar/
 
 - **`MenuBarExtra` with `.window` style** — provides a native popover anchored to the menu bar icon without a Dock presence.
 - **Separate settings window** — settings, account management, and login are in a proper macOS window (`Window` scene with `id: "settings"`), keeping the popover focused on events.
-- **`ASWebAuthenticationSession` for OAuth** — combines browser-open and redirect-capture into one API call with built-in cancellation, replacing the fragile `NSWorkspace.open()` + Apple Event handler approach.
+- **System browser for OAuth consent** — `ASWebAuthenticationSession` was simpler, but its macOS sheet has no address bar, and Google's sensitive-scope verification requires a demo video showing the OAuth client ID in the browser address bar. The browser also reuses existing Google sessions instead of forcing a password on every link.
 - **SwiftData for local persistence** — accounts, calendars, and events are stored locally so the UI can render instantly before a sync completes.
 - **Keychain for OAuth tokens** — access and refresh tokens never touch SwiftData or `UserDefaults`. All token I/O goes through `KeychainService`.
 - **PKCE auth flow** — the OAuth flow uses Proof Key for Code Exchange (S256) to secure the authorization code, even though the app is a native desktop client.
@@ -120,8 +120,8 @@ calendar/
 
 ## How It Works
 
-1. The user clicks **Add Account** in the settings window, which launches `ASWebAuthenticationSession` for Google OAuth consent.
-2. After consent, `ASWebAuthenticationSession` captures the redirect to the custom URL scheme (`com.googleusercontent.apps.<client-id>`) automatically.
+1. The user clicks **Add Account** in the settings window, which opens the Google OAuth consent page in the default browser.
+2. After consent, Google redirects to the custom URL scheme (`com.googleusercontent.apps.<client-id>`), which LaunchServices routes to `AppDelegate.application(_:open:)`; `AuthorizationSession` matches the `state` and resumes the waiting flow.
 3. The auth service extracts the authorization code, exchanges it for tokens (using PKCE), fetches the user's profile, and publishes the result. The UI observes this and creates the account in SwiftData + Keychain.
 4. `CalendarService` fetches the calendar list and events from the Google Calendar API, upserting them into SwiftData.
 5. `MenuBarViewModel` filters and groups events by day, and the SwiftUI views render them in the popover.

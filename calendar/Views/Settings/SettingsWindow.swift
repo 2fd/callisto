@@ -135,9 +135,8 @@ struct SettingsWindow: View {
             title: "Reconnect this account",
             message:
               "Google rejected the saved credentials. Showing the last synced events until you reconnect.",
-            buttonTitle: isReauthorizing ? "Reconnecting…" : "Reconnect",
-            isDisabled: isReauthorizing,
-            action: grantReadPermission
+            buttonTitle: isReauthorizing ? "Cancel" : "Reconnect",
+            action: { isReauthorizing ? cancel() : grantReadPermission() }
           )
         }
 
@@ -162,17 +161,15 @@ struct SettingsWindow: View {
         PermissionActionRow(
           title: "Calendar access needed",
           message: "Grant read permission to sync calendars and events for this account.",
-          buttonTitle: isReauthorizing ? "Requesting…" : "Grant read permission",
-          isDisabled: isReauthorizing,
-          action: grantReadPermission
+          buttonTitle: isReauthorizing ? "Cancel" : "Grant read permission",
+          action: { isReauthorizing ? cancel() : grantReadPermission() }
         )
       } else if !account.canWrite {
         PermissionActionRow(
           title: "Read-only account",
           message: "Calendars and events will sync, but edit actions are hidden until write permission is granted.",
-          buttonTitle: isReauthorizing ? "Requesting…" : "Grant edit permission",
-          isDisabled: isReauthorizing,
-          action: grantEditPermission
+          buttonTitle: isReauthorizing ? "Cancel" : "Grant edit permission",
+          action: { isReauthorizing ? cancel() : grantEditPermission() }
         )
       }
     }
@@ -221,6 +218,12 @@ struct SettingsWindow: View {
       }
     }
 
+    /// Consent happens in the browser, which never reports that the user closed
+    /// the tab, so every re-authorization needs an explicit way out.
+    private func cancel() {
+      accountManager.cancelAuthorization()
+    }
+
     private func grantReadPermission() {
       isReauthorizing = true
       Task {
@@ -248,7 +251,6 @@ struct SettingsWindow: View {
     let title: String
     let message: String
     let buttonTitle: String
-    let isDisabled: Bool
     let action: () -> Void
 
     var body: some View {
@@ -259,7 +261,6 @@ struct SettingsWindow: View {
           .font(.caption)
           .foregroundStyle(.secondary)
         Button(buttonTitle, action: action)
-          .disabled(isDisabled)
           .eventHoverEffect()
       }
     }
@@ -394,6 +395,10 @@ struct SettingsWindow: View {
 
     var body: some View {
       Button {
+        guard !accountManager.isAuthorizing else {
+          accountManager.cancelAuthorization()
+          return
+        }
         Task {
           guard let account = await accountManager.upsert(), account.canRead
           else { return }
@@ -401,8 +406,13 @@ struct SettingsWindow: View {
         }
       } label: {
         HStack(spacing: 4) {
-          Image(systemName: "plus")
-          Text("Add Account")
+          Image(
+            systemName: accountManager.isAuthorizing ? "xmark" : "plus"
+          )
+          Text(
+            accountManager.isAuthorizing
+              ? "Waiting for browser — Cancel" : "Add Account"
+          )
         }
         .frame(maxWidth: .infinity, alignment: .center)
         .padding(.vertical, 4)

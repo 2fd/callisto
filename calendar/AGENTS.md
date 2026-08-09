@@ -13,7 +13,9 @@
 - **Persistence:** SwiftData (accounts, calendars, events, attendees, attachments, reminders)
 - **Secrets:** macOS Keychain (OAuth tokens only)
 - **Preferences:** `UserDefaults` behind the `SettingsStore` protocol
-- **Auth:** Google OAuth 2.0 installed-app flow with PKCE, via `ASWebAuthenticationSession`
+- **Auth:** Google OAuth 2.0 installed-app flow with PKCE. Consent opens in the user's
+  default browser; the redirect returns through the app's registered URL scheme. See
+  [Why not `ASWebAuthenticationSession`](#why-not-aswebauthenticationsession).
 - **API:** Google Calendar API v3 over bare `URLSession` + hand-written `Codable` DTOs
 - **Dependencies (SPM):** [Sparkle](https://github.com/sparkle-project/Sparkle) 2.9.x for
   auto-update — the only third party. Do not add more without a strong reason;
@@ -30,7 +32,7 @@ calendar/
 │   ├── *Mock.swift            # #if DEBUG preview fixtures
 │   └── GoogleCalendar/        # GC* — Codable DTOs, 1:1 with the Google API JSON
 ├── Services/
-│   ├── Auth/                  # AuthConfig, PKCEHelper, AuthPresentationProvider
+│   ├── Auth/                  # AuthConfig, PKCEHelper, AuthorizationSession
 │   ├── Keychain/              # KeychainService, OAuthTokens, KeychainError
 │   └── Google/                # The three managers + GoogleCalendarAPI + APIError
 ├── Views/
@@ -103,12 +105,30 @@ shows a "Grant read permission" row that re-runs the OAuth flow.
 
 ### Permissions
 
+Callisto requests the narrowest scope that serves each endpoint it calls — Google's
+sensitive-scope review grades on exactly that, and `calendar.readonly` is deliberately
+**not** requested:
+
+| Scope | Serves | Required? |
+| --- | --- | --- |
+| `calendar.calendarlist.readonly` | `GET /users/me/calendarList` | yes |
+| `calendar.events.readonly` | `events.list` / `get` / `instances` | yes |
+| `calendar.events` | RSVP, delete, move, patch | optional |
+
 Scopes are granular and *verified against what Google actually granted*, not what was
-requested. `OAuthTokens.grantedScopes` drives `canRead` (`calendar.readonly`) and
-`canWrite` (`calendar.events`); these are mirrored onto `GoogleAccount` and reconciled from
-the Keychain at launch. UI gates on them: read-only accounts sync but hide RSVP/delete
-actions. Event mutations additionally require `GoogleCalendar.canWriteEvents`
+requested. `OAuthTokens.grantedScopes` drives `canRead` (calendar list **and** event read —
+either half alone syncs nothing) and `canWrite`; these are mirrored onto `GoogleAccount` and
+reconciled from the Keychain at launch. UI gates on them: read-only accounts sync but hide
+RSVP/delete actions. Event mutations additionally require `GoogleCalendar.canWriteEvents`
 (`accessRole` is `writer`/`owner`).
+
+Two asymmetries in `AuthConfig` are load-bearing, not redundancy:
+
+- `calendar.events` counts as an *event read* grant. Google returns only the scopes the user
+  actually ticked, so a consent where write was granted and read was not must still read.
+- `calendar.readonly` and `calendar` are recognized (`legacy*Scope`) but never requested.
+  Accounts linked before the narrowing hold those grants, and their refresh tokens keep
+  working — without the alias they would degrade to "Calendar access needed" on upgrade.
 
 ### Read path
 
@@ -143,6 +163,32 @@ read `ticker.now` to register the dependency.
                     call manager methods to mutate,
                     read/write UserSettings directly
 ```
+
+## Why not `ASWebAuthenticationSession`
+
+It was one call — open the consent page, capture the redirect — but on macOS it presents a
+sheet with **no address bar**. Google's sensitive-scope verification requires a demo video
+showing "the browser address bar of the OAuth consent screen correctly includes your app's
+OAuth client ID", and Callisto requests three sensitive Calendar scopes, so that sheet is a
+hard blocker on shipping a verified app.
+
+`AuthorizationSession` opens the authorization URL with `NSWorkspace.open` instead. Three
+consequences:
+
+- **The redirect comes back through LaunchServices**, into
+  `AppDelegate.application(_:open:)` → `GoogleAccountManager.handleAuthorizationCallback`.
+  `CFBundleURLSchemes` in the root `Info.plist` is now load-bearing, not vestigial.
+- **Callisto and Callisto Nightly register the same scheme** (it is derived from the shared
+  `GOOGLE_CLIENT_ID`), so with both installed the redirect can land in the wrong copy.
+  `AuthorizationSession.handle` matches the `state` and returns `false` on a mismatch rather
+  than resuming a flow whose PKCE verifier it does not hold. Give Nightly its own client ID
+  if you need both signing in.
+- **Closing the tab raises no event**, so the flow has a 180s timeout and every entry point
+  offers an explicit Cancel (`isAuthorizing` on the manager).
+
+The browser also reuses the user's existing Google sessions, which is what
+`GoogleAccount.authuser` already assumes — the old ephemeral session forced a password on
+every link.
 
 ## Why not `MenuBarExtra`
 

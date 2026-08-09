@@ -23,14 +23,33 @@ nonisolated struct OAuthTokens: Codable, Sendable {
         Date.now.addingTimeInterval(60) >= expiresAt
     }
 
-    /// Whether the granted scopes include calendar read access.
+    /// Whether the granted scopes allow listing the account's calendars.
+    var canListCalendars: Bool {
+        grants(AuthConfig.calendarListReadGrants)
+    }
+
+    /// Whether the granted scopes allow reading events.
+    var canReadEvents: Bool {
+        grants(AuthConfig.eventsReadGrants)
+    }
+
+    /// Whether the account can sync at all.
+    ///
+    /// Syncing needs both halves: the calendar list names what to fetch, and the
+    /// event scope fetches it. Either one alone produces an account that appears
+    /// connected but shows nothing, so both are required before the UI treats
+    /// the account as readable.
     var canRead: Bool {
-        grantedScopes.contains(AuthConfig.calendarReadScope)
+        canListCalendars && canReadEvents
     }
 
     /// Whether the granted scopes include event write access (`calendar.events`).
     var canWrite: Bool {
-        grantedScopes.contains(AuthConfig.eventsWriteScope)
+        grants(AuthConfig.eventsWriteGrants)
+    }
+
+    private func grants(_ accepted: Set<String>) -> Bool {
+        grantedScopes.contains(where: accepted.contains)
     }
 
     init(accessToken: String, refreshToken: String, expiresAt: Date, grantedScopes: [String] = []) {

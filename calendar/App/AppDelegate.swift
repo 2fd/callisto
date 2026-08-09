@@ -80,6 +80,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     minuteTicker.stop()
   }
 
+  /// Receives the OAuth redirect.
+  ///
+  /// Consent runs in the user's browser (``AuthorizationSession`` explains
+  /// why), so the redirect arrives here through the scheme declared in
+  /// `Info.plist` rather than being captured in-process. Nothing else in the
+  /// app registers a URL scheme.
+  func application(_ application: NSApplication, open urls: [URL]) {
+    for url in urls {
+      // Never log the URL itself — it carries the authorization code.
+      guard eventManager?.accounts.handleAuthorizationCallback(url) == true
+      else {
+        Logger.shared.error(
+          "Ignored a \(url.scheme ?? "schemeless", privacy: .public) URL matching no pending sign-in"
+        )
+        continue
+      }
+      return
+    }
+  }
+
   // MARK: - Wiring
 
   /// Injects the manager chain and app-level actions into a view tree.
