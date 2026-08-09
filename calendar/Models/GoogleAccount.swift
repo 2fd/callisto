@@ -1,6 +1,25 @@
 import Foundation
 import SwiftData
 
+/// Health of an account's connection to Google, independent of its granted scopes.
+///
+/// Kept separate from ``GoogleAccount/canRead`` and ``GoogleAccount/canWrite`` on
+/// purpose: those describe what the *grant* allows and only change when the user
+/// authorizes or revokes. This describes whether the last *network* attempt worked,
+/// and never causes cached data to be discarded.
+enum AccountSyncState: String, Sendable, CaseIterable {
+    /// The last sync attempt succeeded.
+    case ok
+    /// Google rejected our credentials and refreshing them did not help.
+    /// The user must re-run the consent flow.
+    case needsReauth
+    /// Google is rate limiting this account. Transient; see
+    /// ``GoogleAccount/throttledUntil``.
+    case throttled
+    /// Repeated non-auth failures (server errors, offline). Transient.
+    case failing
+}
+
 /// A Google account linked to Callisto.
 ///
 /// Each account maps to a single Google identity. OAuth tokens are stored
@@ -28,6 +47,41 @@ final class GoogleAccount {
     var authuser: Int = 0
     /// Timestamp of the last successful calendar sync, or `nil` if never synced.
     var lastSyncedAt: Date?
+
+    // MARK: - Connection health
+
+    /// Backing storage for ``syncState``. Persisted as a string so the enum can
+    /// gain cases without a SwiftData migration.
+    var syncStateRaw: String = AccountSyncState.ok.rawValue
+
+    /// Earliest time this account may be contacted again after being throttled.
+    var throttledUntil: Date?
+
+    /// Consecutive failed sync cycles, reset on the first success.
+    var consecutiveFailures: Int = 0
+
+    /// Human-readable description of the most recent sync failure, for the UI.
+    var lastSyncError: String?
+
+    /// Health of the last sync attempt. Unknown raw values decode as ``AccountSyncState/ok``
+    /// so a downgrade can never strand an account in a broken state.
+    var syncState: AccountSyncState {
+        get { AccountSyncState(rawValue: syncStateRaw) ?? .ok }
+        set { syncStateRaw = newValue.rawValue }
+    }
+
+    /// Whether this account should be skipped for the current cycle because
+    /// Google asked us to back off.
+    var isThrottled: Bool {
+        guard let throttledUntil else { return false }
+        return throttledUntil > .now
+    }
+
+    /// Whether the account is usable for syncing right now: the grant allows
+    /// reading and we are not inside a backoff window.
+    var isSyncable: Bool {
+        canRead && !isThrottled
+    }
 
     init(
         accountId: String,

@@ -18,7 +18,7 @@ concurrency:
 
 jobs:
   test:
-    name: Build for Testing
+    name: Test
     if: ${{ github.event_name == 'workflow_dispatch' || github.event.label.name == 'run-macos-ci' }}
     runs-on: macos-26
     steps:
@@ -38,6 +38,25 @@ jobs:
             -configuration Debug \
             -destination 'platform=macOS' \
             build-for-testing \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGN_STYLE=Manual \
+            DEVELOPMENT_TEAM="" \
+            PROVISIONING_PROFILE_SPECIFIER="" \
+            CODE_SIGN_ENTITLEMENTS=""
+
+      # Only the unit tests: calendarUITests launches the app, which a headless
+      # runner cannot do reliably.
+      - name: Run unit tests
+        run: |
+          xcodebuild \
+            -project calendar.xcodeproj \
+            -scheme callisto \
+            -configuration Debug \
+            -destination 'platform=macOS' \
+            -only-testing:calendarTests \
+            test-without-building \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO \

@@ -13,7 +13,7 @@ final class GoogleCalendarEventManager {
   let accounts: GoogleAccountManager
   let calendars: GoogleCalendarManager
   private let modelContext: ModelContext
-  private let api = GoogleCalendarAPI()
+  private let api: any CalendarAPI
 
   private(set) var events: [GoogleCalendarEvent] = []
   private var version: UInt64 = 0
@@ -27,12 +27,14 @@ final class GoogleCalendarEventManager {
 
   // MARK: - Init
 
-  init(container: ModelContainer) {
+  init(container: ModelContainer, api: any CalendarAPI = GoogleCalendarAPI()) {
     self.accounts = GoogleAccountManager(container: container)
     self.calendars = GoogleCalendarManager(
       accounts: accounts,
-      container: container
+      container: container,
+      api: api
     )
+    self.api = api
     self.modelContext = ModelContext(container)
     self.events =
       (try? modelContext.fetch(
@@ -165,8 +167,21 @@ final class GoogleCalendarEventManager {
 
   // MARK: - Sync
 
-  /// Full sync: refresh tokens, sync calendar lists, then fetch events for
-  /// every `(account, calendar)` pair within `[today, today + 31 days]` in parallel.
+  /// Result of one calendar's event fetch.
+  private struct FetchResult: Sendable {
+    let accountId: String
+    let calendarId: String
+    let mode: EventSyncMode
+    let startedAt: Date
+    let events: [GCEvent]
+  }
+
+  /// Refreshes tokens, syncs calendar lists, then fetches events for every
+  /// `(account, calendar)` pair within `[today, today + syncFetchDays]`.
+  ///
+  /// Each calendar is read incrementally when it holds a usable cursor, so a
+  /// steady-state cycle transfers only what actually changed instead of
+  /// re-reading and re-writing the whole window every time.
   func sync() async {
     if isSyncing {
       return
@@ -180,63 +195,151 @@ final class GoogleCalendarEventManager {
 
     let cal = Calendar.current
     let timeMin = cal.startOfDay(for: .now)
-    let timeMax = cal.date(byAdding: .day, value: 31, to: timeMin)!
+    let timeMax = cal.date(
+      byAdding: .day,
+      value: Constants.syncFetchDays,
+      to: timeMin
+    )!
 
-    let fetched = await withTaskGroup(
-      of: (String, String, [GCEvent])?.self
-    ) { group in
-      for (accountId, calendarId) in pairs {
+    // Accounts run in parallel — the quota is per user, so they do not contend —
+    // while each account's calendars are paced to a bounded window.
+    let byAccount = Dictionary(grouping: pairs, by: { $0.0 })
+
+    let fetched = await withTaskGroup(of: [FetchResult].self) { group in
+      for (accountId, accountPairs) in byAccount {
         group.addTask { [weak self] in
-          guard let self else { return nil }
-          do {
-            let events = try await self.fetch(
+          guard let self else { return [] }
+          return await withBoundedConcurrency(
+            over: accountPairs,
+            limit: Constants.maxConcurrentRequestsPerAccount
+          ) { pair in
+            await self.fetchForSync(
               accountId: accountId,
-              calendarId: calendarId,
+              calendarId: pair.1,
               timeMin: timeMin,
               timeMax: timeMax
             )
-            return (accountId, calendarId, events)
-          } catch {
-            await self.handleReadFailure(accountId: accountId, error: error)
-            await Logger.shared.error(
-              "Event fetch failed \(accountId, privacy: .public)/\(calendarId, privacy: .public): \(error.localizedDescription, privacy: .public)"
-            )
-            return nil
           }
         }
       }
-      var out: [(String, String, [GCEvent])] = []
+      var out: [FetchResult] = []
       for await result in group {
-        if let result { out.append(result) }
+        out.append(contentsOf: result)
       }
       return out
     }
 
-    for (accountId, calendarId, events) in fetched {
-      applySync(accountId: accountId, calendarId: calendarId, fetched: events)
-      calendars.accounts.markSynced(calendarId)
-      accounts.markSynced(accountId)
+    for result in fetched {
+      applySync(
+        accountId: result.accountId,
+        calendarId: result.calendarId,
+        fetched: result.events,
+        mode: result.mode
+      )
+      calendars.markEventsSynced(
+        calendarId: result.calendarId,
+        mode: result.mode,
+        windowStart: timeMin,
+        startedAt: result.startedAt
+      )
+      accounts.markSynced(result.accountId)
+      accounts.recordSyncSuccess(result.accountId)
     }
 
     resortEvents()
     version &+= 1
   }
 
-  /// Fetches events for a single calendar.
-  func fetch(
+  /// Fetches one calendar in whichever mode its cursor allows, falling back to
+  /// a full read if Google rejects the cursor. Returns `nil` when the fetch
+  /// failed, having recorded the failure against the account.
+  private func fetchForSync(
     accountId: String,
     calendarId: String,
     timeMin: Date,
     timeMax: Date
+  ) async -> FetchResult? {
+    let mode = calendars.syncMode(for: calendarId, windowStart: timeMin)
+    // Stamped before the request so a change landing mid-flight is caught by
+    // the next delta rather than skipped.
+    let startedAt = Date.now
+
+    do {
+      let events = try await fetch(
+        accountId: accountId,
+        calendarId: calendarId,
+        timeMin: timeMin,
+        timeMax: timeMax,
+        mode: mode
+      )
+      return FetchResult(
+        accountId: accountId,
+        calendarId: calendarId,
+        mode: mode,
+        startedAt: startedAt,
+        events: events
+      )
+    } catch let error as APIError where error.requiresFullSync {
+      // 410 `updatedMinTooLongAgo`: the cursor is too old to be honored.
+      // Google's prescribed action is to discard it and re-sync in full.
+      Logger.shared.info(
+        "Sync cursor rejected for \(calendarId, privacy: .public); falling back to a full sync"
+      )
+      calendars.invalidateSyncCursor(calendarId: calendarId)
+      let retryStartedAt = Date.now
+      do {
+        let events = try await fetch(
+          accountId: accountId,
+          calendarId: calendarId,
+          timeMin: timeMin,
+          timeMax: timeMax,
+          mode: .full
+        )
+        return FetchResult(
+          accountId: accountId,
+          calendarId: calendarId,
+          mode: .full,
+          startedAt: retryStartedAt,
+          events: events
+        )
+      } catch {
+        accounts.recordSyncFailure(accountId, error: error)
+        return nil
+      }
+    } catch {
+      // Records health only — cached events for this account are kept. A
+      // throttle, an outage or an expired token says nothing about whether the
+      // events already on disk are still correct.
+      accounts.recordSyncFailure(accountId, error: error)
+      Logger.shared.error(
+        "Event fetch failed \(accountId, privacy: .public)/\(calendarId, privacy: .public): \(error.localizedDescription, privacy: .public)"
+      )
+      return nil
+    }
+  }
+
+  /// Fetches events for a single calendar, following pagination.
+  ///
+  /// In `.delta` mode `showDeleted` is on: an incremental response reports
+  /// deletions as `status: "cancelled"` tombstones, and without them a deleted
+  /// event would linger in the cache until the next full read.
+  func fetch(
+    accountId: String,
+    calendarId: String,
+    timeMin: Date,
+    timeMax: Date,
+    mode: EventSyncMode = .full
   ) async throws -> [GCEvent] {
-    let token = try await accounts.token(for: accountId)
-    let response = try await api.listEvents(
-      calendarId: calendarId,
-      accessToken: token,
-      timeMin: timeMin,
-      timeMax: timeMax
-    )
-    return response.items
+    try await accounts.withToken(for: accountId) { token in
+      try await api.listAllEvents(
+        calendarId: calendarId,
+        accessToken: token,
+        timeMin: timeMin,
+        timeMax: timeMax,
+        updatedMin: mode.updatedMin,
+        showDeleted: !mode.isFull
+      )
+    }
   }
 
   // MARK: - Mutations
@@ -391,10 +494,15 @@ final class GoogleCalendarEventManager {
     version &+= 1
   }
 
-  /// Updates account permission state after a failed event mutation.
+  /// Updates account state after a failed event mutation.
+  ///
+  /// Only a genuine scope failure narrows the grant — a 403 for quota, or a
+  /// 403 the user simply isn't the organizer for, must not revoke write access.
   func handleMutationFailure(_ event: GoogleCalendarEvent, error: Error) {
-    guard error.isPermissionDenied else { return }
-    accounts.markWritePermissionDenied(event.accountId)
+    if let apiError = error as? APIError, case .scopeDenied = apiError {
+      accounts.markWritePermissionDenied(event.accountId)
+    }
+    accounts.recordSyncFailure(event.accountId, error: error)
   }
 
   // MARK: - Mutation support
@@ -599,18 +707,21 @@ final class GoogleCalendarEventManager {
 
   // MARK: - Private
 
-  private func handleReadFailure(accountId: String, error: Error) {
-    guard error.isPermissionDenied else { return }
-    accounts.markReadPermissionDenied(accountId)
-    logout(accountId: accountId)
-  }
-
-  private func applySync(
+  /// Merges a fetch into the local store.
+  ///
+  /// - Parameter mode: `.full` responses are authoritative for the whole
+  ///   window, so anything missing from them has been deleted upstream.
+  ///   `.delta` responses contain only what changed, so absence means
+  ///   "unchanged" — pruning by absence there would delete the entire calendar.
+  ///
+  /// Internal rather than private so the merge rules can be tested directly;
+  /// reaching them through ``sync()`` would require a live Keychain.
+  func applySync(
     accountId: String,
     calendarId: String,
-    fetched: [GCEvent]
+    fetched: [GCEvent],
+    mode: EventSyncMode
   ) {
-    let compositeIds = Set(fetched.map { "\(calendarId)/\($0.id)" })
     let existing = events.filter {
       $0.calendarId == calendarId && $0.accountId == accountId
     }
@@ -618,9 +729,23 @@ final class GoogleCalendarEventManager {
       uniqueKeysWithValues: existing.map { ($0.compositeId, $0) }
     )
 
+    var tombstoned: [GoogleCalendarEvent] = []
+
     for gc in fetched {
       let id = "\(calendarId)/\(gc.id)"
-      if let event = byId[id] {
+      let local = byId[id]
+
+      // Deletions arrive as cancelled tombstones when `showDeleted` is on.
+      if gc.status == EventStatus.cancelled {
+        if let local { tombstoned.append(local) }
+        continue
+      }
+
+      if let event = local {
+        // The ETag changes whenever Google changes the event, so an unchanged
+        // one costs nothing here. Without this check every cycle deletes and
+        // reinserts every attendee, attachment and reminder of every event.
+        guard event.etag != gc.etag || event.etag.isEmpty else { continue }
         event.update(from: gc)
         syncAttendees(for: event, from: gc.attendees)
         syncAttachments(for: event, from: gc.attachments)
@@ -638,9 +763,17 @@ final class GoogleCalendarEventManager {
       }
     }
 
-    let stale = existing.filter { !compositeIds.contains($0.compositeId) }
-    for event in stale { modelContext.delete(event) }
-    events.removeAll { stale.contains($0) }
+    var removed = tombstoned
+    if mode.isFull {
+      let present = Set(fetched.map { "\(calendarId)/\($0.id)" })
+      removed += existing.filter { !present.contains($0.compositeId) }
+    }
+
+    if !removed.isEmpty {
+      let removedIds = Set(removed.map(\.compositeId))
+      for event in removed { modelContext.delete(event) }
+      events.removeAll { removedIds.contains($0.compositeId) }
+    }
 
     try? modelContext.save()
   }

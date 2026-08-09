@@ -12,7 +12,7 @@ final class GoogleCalendarManager {
 
   let accounts: GoogleAccountManager
   private let modelContext: ModelContext
-  private let api = GoogleCalendarAPI()
+  private let api: any CalendarAPI
 
   private(set) var calendars: [GoogleCalendar] = []
   private var version: UInt64 = 0
@@ -21,8 +21,13 @@ final class GoogleCalendarManager {
     calendars.isEmpty
   }
 
-  init(accounts: GoogleAccountManager, container: ModelContainer) {
+  init(
+    accounts: GoogleAccountManager,
+    container: ModelContainer,
+    api: any CalendarAPI = GoogleCalendarAPI()
+  ) {
     self.accounts = accounts
+    self.api = api
     self.modelContext = ModelContext(container)
     self.calendars =
       (try? modelContext.fetch(FetchDescriptor<GoogleCalendar>())) ?? []
@@ -82,6 +87,67 @@ final class GoogleCalendarManager {
     version &+= 1
   }
 
+  /// Stamps a calendar's `lastSyncedAt` after a successful event fetch for it.
+  func markSynced(calendarId: String) {
+    guard let calendar = get(calendarId: calendarId) else { return }
+    calendar.lastSyncedAt = .now
+    try? modelContext.save()
+    version &+= 1
+  }
+
+  /// Decides how the next event fetch for this calendar should be issued.
+  ///
+  /// A full read is required when there is no cursor, when the window has moved
+  /// to a new day (events that entered the window were not *modified*, so
+  /// `updatedMin` would not return them), or when the last full read is old
+  /// enough that a missed change would be worth catching.
+  func syncMode(for calendarId: String, windowStart: Date) -> EventSyncMode {
+    guard let calendar = get(calendarId: calendarId),
+      let cursor = calendar.lastDeltaSyncAt,
+      let lastFull = calendar.lastFullSyncAt,
+      calendar.syncWindowStart == windowStart,
+      Date.now.timeIntervalSince(lastFull) < Constants.fullSyncInterval
+    else {
+      return .full
+    }
+    // Re-ask for a small overlap so a change landing between the server's clock
+    // and ours cannot fall through the gap.
+    return .delta(since: cursor.addingTimeInterval(-Constants.deltaSyncOverlap))
+  }
+
+  /// Records the outcome of an event fetch against a calendar's cursor.
+  ///
+  /// `completedAt` is captured *before* the request goes out, so anything
+  /// modified while it was in flight is picked up by the next delta rather than
+  /// skipped.
+  func markEventsSynced(
+    calendarId: String,
+    mode: EventSyncMode,
+    windowStart: Date,
+    startedAt: Date
+  ) {
+    guard let calendar = get(calendarId: calendarId) else { return }
+    calendar.lastSyncedAt = .now
+    calendar.lastDeltaSyncAt = startedAt
+    calendar.syncWindowStart = windowStart
+    if case .full = mode {
+      calendar.lastFullSyncAt = .now
+    }
+    try? modelContext.save()
+    version &+= 1
+  }
+
+  /// Drops a calendar's incremental cursor, forcing a full read next cycle.
+  /// Called when Google reports the cursor is no longer usable (410).
+  func invalidateSyncCursor(calendarId: String) {
+    guard let calendar = get(calendarId: calendarId) else { return }
+    calendar.lastDeltaSyncAt = nil
+    calendar.lastFullSyncAt = nil
+    calendar.syncWindowStart = nil
+    try? modelContext.save()
+    version &+= 1
+  }
+
   func logout(accountId: String) {
     let toRemove = calendars.filter { $0.accountId == accountId }
     for cal in toRemove { modelContext.delete(cal) }
@@ -109,10 +175,8 @@ final class GoogleCalendarManager {
             let entries = try await self.fetch(accountId: accountId)
             return (accountId, entries)
           } catch {
-            await self.handleReadFailure(accountId, error: error)
-            await Logger.shared.error(
-              "Calendar list fetch failed for \(accountId, privacy: .public): \(error.localizedDescription, privacy: .public)"
-            )
+            // Records health only — the cached calendar list is left intact.
+            await self.accounts.recordSyncFailure(accountId, error: error)
             return nil
           }
         }
@@ -128,6 +192,7 @@ final class GoogleCalendarManager {
     for (accountId, entries) in fetched {
       applySync(accountId: accountId, entries: entries)
       accounts.markSynced(accountId)
+      accounts.recordSyncSuccess(accountId)
       for entry in entries { results.append((accountId, entry.id)) }
     }
 
@@ -137,18 +202,12 @@ final class GoogleCalendarManager {
 
   /// Fetches the calendar list for a single account via the Google Calendar API.
   func fetch(accountId: String) async throws -> [GCCalendarListEntry] {
-    let token = try await accounts.token(for: accountId)
-    let response = try await api.listCalendars(accessToken: token)
-    return response.items
+    try await accounts.withToken(for: accountId) { token in
+      try await api.listCalendars(accessToken: token).items
+    }
   }
 
   // MARK: - Private
-
-  private func handleReadFailure(_ accountId: String, error: Error) {
-    guard error.isPermissionDenied else { return }
-    accounts.markReadPermissionDenied(accountId)
-    logout(accountId: accountId)
-  }
 
   private func applySync(accountId: String, entries: [GCCalendarListEntry]) {
     let existing = Dictionary(
