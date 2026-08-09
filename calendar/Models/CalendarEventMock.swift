@@ -498,8 +498,11 @@ enum CalendarEventMock {
         conferenceLink: String? = nil,
         attendees: [EventAttendee]? = nil
     ) -> GoogleCalendarEvent {
+        // The organizer is someone else here: ``GoogleCalendarEvent`` reads the
+        // *first* self attendee, so a self organizer would answer "accepted"
+        // before the tentative one is reached.
         let defaultAttendees = [
-            EventAttendeeMock.organizer(),
+            EventAttendeeMock.make(email: "boss@example.com", displayName: "Boss", responseStatus: "accepted", isOrganizer: true),
             EventAttendeeMock.make(email: "me@gmail.com", displayName: "Me", responseStatus: "tentative", isSelf: true),
             EventAttendeeMock.accepted(email: "alice@example.com", displayName: "Alice"),
         ]
@@ -523,8 +526,10 @@ enum CalendarEventMock {
         conferenceLink: String? = nil,
         attendees: [EventAttendee]? = nil
     ) -> GoogleCalendarEvent {
+        // See ``maybe(...)``: the organizer has to be someone else for the self
+        // attendee's pending response to be the one that counts.
         let defaultAttendees = [
-            EventAttendeeMock.organizer(),
+            EventAttendeeMock.make(email: "boss@example.com", displayName: "Boss", responseStatus: "accepted", isOrganizer: true),
             EventAttendeeMock.make(email: "me@gmail.com", displayName: "Me", responseStatus: "needsAction", isSelf: true),
             EventAttendeeMock.accepted(email: "alice@example.com", displayName: "Alice"),
         ]

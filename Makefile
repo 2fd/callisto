@@ -6,7 +6,7 @@ NIGHTLY_PRODUCT := $(NIGHTLY_DERIVED_DATA)/Build/Products/Nightly/Callisto.app
 NIGHTLY_INSTALL_DIR := $(HOME)/Applications
 NIGHTLY_INSTALLED_APP := $(NIGHTLY_INSTALL_DIR)/Callisto Nightly.app
 
-.PHONY: build install run clean
+.PHONY: build install run open clean
 
 build:
 	xcodebuild -project "$(PROJECT)" \
@@ -22,6 +22,10 @@ install: build
 
 run: install
 	open "$(NIGHTLY_INSTALLED_APP)"
+
+# Reveals the build output directory in Finder.
+open:
+	open "$(dir $(NIGHTLY_PRODUCT))"
 
 clean:
 	rm -rf "$(NIGHTLY_DERIVED_DATA)"

@@ -65,21 +65,21 @@ final class GoogleCalendarEvent {
   // MARK: - Conferencing (flattened)
 
   var conferenceLink: String?
-  var conferenceColor: String {
-    if (conferenceLink != nil) {
-      if (conferenceLink!.contains("zoom.us")) {
-          return "2D8CFF"
-      }
-      
-      if (conferenceLink!.contains("meet.google.com")) {
-        return "fed812"
-      }
-    }
-    
-    return "34A853"
-//    return "8E8E93"
+
+  /// The provider behind ``conferenceLink``, when it is one the app names.
+  /// `nil` covers every other video link, which is tagged generically.
+  var conferenceProvider: ConferenceProvider? {
+    guard let conferenceLink else { return nil }
+    if conferenceLink.contains("zoom.us") { return .zoom }
+    if conferenceLink.contains("meet.google.com") { return .meet }
+    return nil
   }
-  
+
+  var conferenceColor: String {
+    conferenceProvider?.brandColor ?? "34A853"
+  }
+
+
   var conferenceSolutionName: String?
   var conferenceSolutionIconUri: String?
   var conferenceId: String?
@@ -437,12 +437,30 @@ extension GoogleCalendarEvent {
   }
 }
 
+/// A conferencing provider the app labels by name rather than by icon.
+enum ConferenceProvider: String, Sendable {
+  case zoom
+  case meet
+
+  /// Brand color the label is drawn in.
+  var brandColor: String {
+    switch self {
+    case .zoom: "2D8CFF"
+    case .meet: "fed812"
+    }
+  }
+}
+
 /// An event bundled with the calendar and account it belongs to, so views
 /// never have to resolve those associations themselves.
 struct EventEntry: Identifiable {
   let event: GoogleCalendarEvent
   let calendar: GoogleCalendar
   let account: GoogleAccount
+  /// Hex color the row is drawn in: the event's own when it has one, otherwise
+  /// its calendar's. Resolved once at construction, where the account's palette
+  /// is in reach, so views never have to.
+  let color: String
 
   var id: String { event.compositeId }
 }

@@ -19,12 +19,16 @@ final class FakeCalendarAPI: CalendarAPI, @unchecked Sendable {
 
     private var calendarOutcomes: [Outcome<GCCalendarListResponse>] = []
     private var eventOutcomes: [Outcome<[GCEvent]>] = []
+    private var colorOutcomes: [Outcome<GCColors>] = []
 
     // MARK: - Recorded calls
 
     /// Every `listAllEvents` call, in order.
     private(set) var eventRequests: [EventRequest] = []
     private(set) var calendarRequestCount = 0
+    /// Access tokens `listColors` was called with, in order. The palette is
+    /// per account, so the token is what tells two accounts apart.
+    private(set) var colorRequestTokens: [String] = []
 
     struct EventRequest: Sendable {
         let calendarId: String
@@ -47,6 +51,14 @@ final class FakeCalendarAPI: CalendarAPI, @unchecked Sendable {
         lock.withLock { calendarOutcomes.append(.failure(error)) }
     }
 
+    func enqueueColors(_ colors: GCColors) {
+        lock.withLock { colorOutcomes.append(.success(colors)) }
+    }
+
+    func enqueueColorFailure(_ error: APIError) {
+        lock.withLock { colorOutcomes.append(.failure(error)) }
+    }
+
     func enqueueEvents(_ events: [GCEvent]) {
         lock.withLock { eventOutcomes.append(.success(events)) }
     }
@@ -65,6 +77,19 @@ final class FakeCalendarAPI: CalendarAPI, @unchecked Sendable {
             }
             switch calendarOutcomes.removeFirst() {
             case .success(let response): return response
+            case .failure(let error): throw error
+            }
+        }
+    }
+
+    func listColors(accessToken: String) async throws -> GCColors {
+        try lock.withLock {
+            colorRequestTokens.append(accessToken)
+            guard !colorOutcomes.isEmpty else {
+                return GCColors.empty
+            }
+            switch colorOutcomes.removeFirst() {
+            case .success(let colors): return colors
             case .failure(let error): throw error
             }
         }
@@ -124,6 +149,33 @@ final class FakeCalendarAPI: CalendarAPI, @unchecked Sendable {
         sendUpdates: GoogleCalendarAPI.SendUpdates
     ) async throws {
         throw APIError.notFound(message: "not scripted")
+    }
+}
+
+extension GCColors {
+    static var empty: GCColors {
+        GCColors(
+            kind: "calendar#colors",
+            updated: "2026-01-01T00:00:00.000Z",
+            calendar: [:],
+            event: [:]
+        )
+    }
+
+    /// A palette built from `colorId: background` pairs.
+    static func make(
+        event: [String: String] = [:],
+        calendar: [String: String] = [:]
+    ) -> GCColors {
+        func definitions(_ pairs: [String: String]) -> [String: GCColorDefinition] {
+            pairs.mapValues { GCColorDefinition(background: $0, foreground: "#1d1d1d") }
+        }
+        return GCColors(
+            kind: "calendar#colors",
+            updated: "2026-01-01T00:00:00.000Z",
+            calendar: definitions(calendar),
+            event: definitions(event)
+        )
     }
 }
 

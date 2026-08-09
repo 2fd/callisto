@@ -167,6 +167,25 @@ struct GoogleCalendarAPITests {
         #expect(second.contains("pageToken=TOKEN-2"))
     }
 
+    @Test("Colors are read from the account-level colors endpoint")
+    func listColorsRequestShape() async throws {
+        StubURLProtocol.script([
+            .json(
+                200,
+                """
+                {"kind":"calendar#colors","updated":"2012-02-14T00:00:00.000Z",
+                 "calendar":{},"event":{"11":{"background":"#dc2127","foreground":"#1d1d1d"}}}
+                """
+            )
+        ])
+        let api = StubURLProtocol.makeAPI()
+
+        let colors = try await api.listColors(accessToken: "token")
+
+        #expect(colors.event["11"]?.background == "#dc2127")
+        #expect(StubURLProtocol.requestedURLs[0].path == "/calendar/v3/colors")
+    }
+
     // MARK: - Query shape
 
     @Test("Incremental requests send updatedMin and ask for tombstones")

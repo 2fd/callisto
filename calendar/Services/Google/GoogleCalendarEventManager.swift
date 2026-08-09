@@ -95,7 +95,12 @@ final class GoogleCalendarEventManager {
         let account = accountsById[event.accountId],
         account.canRead
       else { return nil }
-      return EventEntry(event: event, calendar: calendar, account: account)
+      return EventEntry(
+        event: event,
+        calendar: calendar,
+        account: account,
+        color: calendars.color(for: event, in: calendar)
+      )
     }
 
     if !settings.showDeclinedEvents {

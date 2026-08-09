@@ -63,6 +63,19 @@ nonisolated struct GoogleCalendarAPI: CalendarAPI {
         )
     }
 
+    // MARK: - Colors
+
+    /// Fetches the calendar and event color palettes for the token's account.
+    ///
+    /// Reference: https://developers.google.com/calendar/api/v3/reference/colors/get
+    func listColors(accessToken: String) async throws -> GCColors {
+        try await request(
+            method: "GET",
+            path: "/colors",
+            accessToken: accessToken
+        )
+    }
+
     // MARK: - Events (read)
 
     /// Maximum page size the API accepts. The default is 250, so asking for the

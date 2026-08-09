@@ -12,6 +12,49 @@ struct EventPreviewFixture {
         EventPreviewFixture(eventManager: makeEventManager(), days: [])
     }
 
+    /// One entry per state an ``EventRow`` can be in, for the row gallery.
+    static func rowGallery() -> [EventEntry] {
+        [
+            EventEntryMock.make(event: CalendarEventMock.allDay()),
+            EventEntryMock.make(
+                event: CalendarEventMock.allDay(
+                    summary: "Out of Office",
+                    eventType: EventType.outOfOffice
+                )
+            ),
+            EventEntryMock.make(event: CalendarEventMock.birthday()),
+            EventEntryMock.make(
+                event: CalendarEventMock.today(
+                    summary: "Past Event",
+                    startDate: .now.addingTimeInterval(-3600)
+                )
+            ),
+            EventEntryMock.make(event: CalendarEventMock.ongoingMeeting()),
+            EventEntryMock.make(event: CalendarEventMock.today()),
+            EventEntryMock.make(
+                event: CalendarEventMock.make(
+                    compositeId: "cal1/recolored",
+                    eventId: "recolored",
+                    summary: "Recolored Event (Tomato)",
+                    startDate: .now.addingTimeInterval(1200),
+                    colorId: "11"
+                )
+            ),
+            EventEntryMock.make(
+                event: CalendarEventMock.today(summary: "[IMPORTANT] Important Event")
+            ),
+            EventEntryMock.make(event: CalendarEventMock.cancelled()),
+            EventEntryMock.make(event: CalendarEventMock.maybe()),
+            EventEntryMock.make(event: CalendarEventMock.pendingConfirm()),
+            EventEntryMock.make(event: CalendarEventMock.outOfOffice()),
+            EventEntryMock.make(event: CalendarEventMock.withConference()),
+            EventEntryMock.make(event: CalendarEventMock.allDeclined()),
+            EventEntryMock.make(
+                event: CalendarEventMock.today(summary: "[IMPORTANT] Urgent Review")
+            ),
+        ]
+    }
+
     static func loaded() -> EventPreviewFixture {
         let calendar = Foundation.Calendar.current
         let today = calendar.startOfDay(for: .now)
