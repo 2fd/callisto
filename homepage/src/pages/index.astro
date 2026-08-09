@@ -10,7 +10,7 @@ import ConferenceKindPreview from "@/components/marketing/ConferenceKindPreview.
 import QuickActionsPreview from "@/components/marketing/QuickActionsPreview.astro";
 import AccountLinksPreview from "@/components/marketing/AccountLinksPreview.astro";
 import DaysAheadPreview from "@/components/marketing/DaysAheadPreview.astro";
-import CallistoMark from "@/components/brand/CallistoMark.astro";
+import callistoMark from "@/assets/callisto.png";
 import jupiterVideo from "@/assets/jupiter.mp4";
 ---
 
@@ -160,7 +160,14 @@ import jupiterVideo from "@/assets/jupiter.mp4";
       class="relative grid items-center gap-8 px-8 py-8 text-center md:grid-cols-[72px_minmax(0,1fr)_minmax(240px,auto)] md:px-16 md:text-left lg:px-[88px]"
     >
       <div class="flex justify-center md:justify-start">
-        <CallistoMark size="lg" class="size-16" />
+        <img
+          src={callistoMark.src}
+          alt=""
+          width="64"
+          height="64"
+          class="size-16"
+          loading="lazy"
+        />
       </div>
 
       <div>
