@@ -46,13 +46,19 @@ const updated = "June 1, 2026";
   <p>Callisto currently requests these Google OAuth scopes:</p>
   <ul>
     <li>
-      <code>https://www.googleapis.com/auth/calendar.readonly</code>, used to
-      read your calendar list and upcoming calendar events.
+      <code>https://www.googleapis.com/auth/calendar.calendarlist.readonly</code
+      >, used to read the list of calendars you are subscribed to, along with
+      their names, colors, and time zones.
+    </li>
+    <li>
+      <code>https://www.googleapis.com/auth/calendar.events.readonly</code>,
+      used to read the upcoming events on those calendars.
     </li>
     <li>
       <code>https://www.googleapis.com/auth/calendar.events</code>, used only
       when you perform event actions such as RSVP updates or deleting/removing
-      events.
+      events. This permission is optional; if you decline it, Callisto still
+      shows your events and only hides the edit actions.
     </li>
     <li>
       <code>https://www.googleapis.com/auth/userinfo.email</code> and <code

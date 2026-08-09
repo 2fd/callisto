@@ -1,4 +1,3 @@
-import AuthenticationServices
 import Foundation
 import SwiftData
 import os
@@ -22,8 +21,16 @@ final class GoogleAccountManager {
 
   // MARK: - OAuth
 
-  private let presentationProvider = AuthPresentationProvider()
-  private var currentSession: ASWebAuthenticationSession?
+  private let authorization = AuthorizationSession()
+
+  /// Whether a consent flow is waiting on the browser. Drives the "Cancel"
+  /// affordance in Settings — the browser cannot tell us the user closed the
+  /// tab, so the only way out is for them to say so.
+  private(set) var isAuthorizing = false
+
+  /// Distinguishes concurrent consent attempts so a flow that has already been
+  /// superseded cannot clear ``isAuthorizing`` out from under its replacement.
+  private var authorizationGeneration: UInt64 = 0
 
   // MARK: - Refresh coalescing
 
@@ -467,12 +474,24 @@ final class GoogleAccountManager {
     let name: String?
   }
 
+  /// Abandons a consent flow that is still waiting on the browser.
+  func cancelAuthorization() {
+    authorization.cancel()
+  }
+
+  /// Routes an OAuth redirect delivered to the app's URL scheme.
+  ///
+  /// Returns `false` if it matches no in-flight flow, so `AppDelegate` can log
+  /// the URL as unhandled rather than swallowing it.
+  @discardableResult
+  func handleAuthorizationCallback(_ url: URL) -> Bool {
+    authorization.handle(url)
+  }
+
   /// Runs the PKCE OAuth consent flow and fetches the user's profile.
   private func runOAuthFlow(loginHint: String?) async -> (
     OAuthTokens, UserInfo
   )? {
-    currentSession?.cancel()
-
     let verifier = PKCEHelper.generateVerifier()
     let challenge = PKCEHelper.generateChallenge(from: verifier)
     let state = PKCEHelper.generateState()
@@ -499,44 +518,30 @@ final class GoogleAccountManager {
     }
     components.queryItems = items
 
+    authorizationGeneration &+= 1
+    let generation = authorizationGeneration
+    isAuthorizing = true
+    defer {
+      // A superseded flow must not clear the flag its replacement just set.
+      if generation == authorizationGeneration { isAuthorizing = false }
+    }
+
     do {
-      let callbackURL = try await withCheckedThrowingContinuation {
-        (cont: CheckedContinuation<URL, Error>) in
-        let session = ASWebAuthenticationSession(
-          url: components.url!,
-          callbackURLScheme: AuthConfig.callbackScheme
-        ) { url, error in
-          if let error {
-            cont.resume(throwing: error)
-          } else if let url {
-            cont.resume(returning: url)
-          } else {
-            cont.resume(throwing: AuthError.missingAuthCode)
-          }
-        }
-        session.prefersEphemeralWebBrowserSession = true
-        session.presentationContextProvider = presentationProvider
-        self.currentSession = session
-        session.start()
-      }
-
-      defer { currentSession = nil }
-
+      let callbackURL = try await authorization.authorize(
+        url: components.url!,
+        state: state
+      )
       let code = try extractAuthCode(from: callbackURL, expectedState: state)
       let tokens = try await exchangeCode(code: code, verifier: verifier)
       let info = try await fetchUserInfo(accessToken: tokens.accessToken)
       return (tokens, info)
-    } catch let error as ASWebAuthenticationSessionError
-      where error.code == .canceledLogin
-    {
+    } catch AuthError.userCancelled {
       Logger.shared.info("User cancelled OAuth flow")
-      currentSession = nil
       return nil
     } catch {
       Logger.shared.error(
         "OAuth flow failed: \(error.localizedDescription, privacy: .public)"
       )
-      currentSession = nil
       return nil
     }
   }
@@ -628,6 +633,8 @@ nonisolated enum AuthError: LocalizedError, Sendable {
   case refreshFailed(String)
   case userCancelled
   case invalidState
+  case browserUnavailable
+  case timedOut
 
   var errorDescription: String? {
     switch self {
@@ -638,6 +645,8 @@ nonisolated enum AuthError: LocalizedError, Sendable {
     case .refreshFailed(let detail): "Token refresh failed: \(detail)"
     case .userCancelled: "Authentication was cancelled."
     case .invalidState: "OAuth state validation failed."
+    case .browserUnavailable: "Could not open a browser to sign in."
+    case .timedOut: "Sign-in timed out waiting for the browser."
     }
   }
 
@@ -652,7 +661,8 @@ nonisolated enum AuthError: LocalizedError, Sendable {
       true
     case .refreshFailed(let detail), .tokenExchangeFailed(let detail):
       detail.localizedCaseInsensitiveContains("invalid_grant")
-    case .userCancelled:
+    case .userCancelled, .browserUnavailable, .timedOut:
+      // The user never got as far as answering; the existing grant is intact.
       false
     }
   }
