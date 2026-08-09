@@ -1,29 +1,79 @@
 ---
 import { MousePointer2 } from "@lucide/astro";
 import AppPanel from "@/components/marketing/AppPanel.astro";
+import AppDayHeader from "@/components/marketing/AppDayHeader.astro";
 import AppEventRow from "@/components/marketing/AppEventRow.astro";
+import { eventPalette } from "@/lib/calendarRow";
 ---
 
-<div class="relative w-full max-w-[340px] lg:max-w-none">
-  <AppPanel heading="Today">
-    <AppEventRow title="Morning standup" time="9:30 – 9:45" conference="meet" />
-    <AppEventRow
-      title="Design review"
-      time="11:00 – 12:00"
-      color="#33B679"
-      conference="zoom"
-      active
+<div class="flex w-full justify-start md:justify-end">
+  {
+    /* The pointer and its tag sit outside the panel: the panel clips to its own
+      rounded corners, and the tag is meant to spill past them. */
+  }
+  <div class="relative w-[280px]">
+    <AppPanel month="AUG 2026" synced="Synced 2 minutes ago">
+      <AppDayHeader day="MON 10" />
+
+      <AppEventRow
+        title="Jane's birthday"
+        color={eventPalette.banana}
+        badges={["birthday"]}
+        compact
+      />
+
+      <AppEventRow title="Morning standup" time="9:30 - 9:45" past />
+
+      <AppEventRow
+        title="Sprint planning"
+        time="11:00 - 12:00"
+        treatment="ongoing"
+        conference="zoom"
+        hover
+      />
+
+      <AppEventRow
+        title="Design review"
+        time="13:00 - 14:00"
+        color={eventPalette.sage}
+        conference="meet"
+      />
+
+      <AppEventRow
+        title="Optional sync"
+        time="14:30 - 15:00"
+        color={eventPalette.lavender}
+        tentative
+      />
+
+      <AppEventRow
+        title="Quarterly review"
+        time="15:30 - 16:30"
+        color={eventPalette.tomato}
+        treatment="bordered"
+        struckThrough
+      />
+
+      <AppEventRow
+        title="1:1 with Sam"
+        time="17:00 - 17:30"
+        color={eventPalette.flamingo}
+        location="Room 4B"
+      />
+    </AppPanel>
+
+    {
+      /* Over the meeting in progress. Everything above it in the panel is a
+        fixed height, so these offsets stay put. */
+    }
+    <MousePointer2
+      class="absolute top-[156px] left-[124px] size-5 fill-light text-night drop-shadow-[0_2px_6px_rgba(0,0,0,0.55)]"
     />
-    <AppEventRow title="1:1 with Sam" time="16:00 – 16:30" location="Room 4B" />
-  </AppPanel>
 
-  <MousePointer2
-    class="absolute left-[52%] top-[52%] size-5 fill-light text-night drop-shadow-[0_2px_6px_rgba(0,0,0,0.55)]"
-  />
-
-  <div
-    class="absolute left-[56%] top-[60%] whitespace-nowrap rounded-xs bg-primary px-2 py-1 text-[0.7rem] font-semibold text-primary-foreground shadow-elevation-2"
-  >
-    Opening Zoom…
+    <span
+      class="absolute top-[174px] left-[148px] rounded-xs bg-primary px-2 py-1 text-[0.7rem] font-semibold whitespace-nowrap text-primary-foreground shadow-elevation-2"
+    >
+      Opening Zoom…
+    </span>
   </div>
 </div>
