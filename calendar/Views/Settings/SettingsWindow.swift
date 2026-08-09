@@ -319,7 +319,7 @@ struct SettingsWindow: View {
         
         
         RoundedRectangle(cornerRadius: 6)
-          .fill(Color(hex: calendar.backgroundColor))
+          .fill(Color(hex: calendarManager.color(for: calendar)))
           .frame(width: 4, height: 20)
 
         Text(calendar.displayName)

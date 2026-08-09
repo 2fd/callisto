@@ -4,15 +4,22 @@
     /// Factory for creating ``EventEntry`` instances in tests and previews.
     enum EventEntryMock {
 
+        /// Resolves ``EventEntry/color`` exactly as ``GoogleCalendarManager``
+        /// does, so a mock event carrying a `colorId` previews in that color.
         static func make(
             event: GoogleCalendarEvent,
             calendar: GoogleCalendar? = nil,
-            account: GoogleAccount? = nil
+            account: GoogleAccount? = nil,
+            palette: ColorPalette = .googleDefaults
         ) -> EventEntry {
-            EventEntry(
+            let calendar = calendar ?? GoogleCalendarMock.primary()
+            return EventEntry(
                 event: event,
-                calendar: calendar ?? GoogleCalendarMock.primary(),
-                account: account ?? GoogleAccountMock.primary()
+                calendar: calendar,
+                account: account ?? GoogleAccountMock.primary(),
+                color: palette.event(event.colorId)
+                    ?? palette.calendar(calendar.colorId)
+                    ?? calendar.backgroundColor
             )
         }
     }

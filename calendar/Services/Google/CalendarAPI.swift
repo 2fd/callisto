@@ -16,6 +16,9 @@ nonisolated protocol CalendarAPI: Sendable {
     /// Fetches the authenticated user's calendar list.
     func listCalendars(accessToken: String) async throws -> GCCalendarListResponse
 
+    /// Fetches the color palettes for the token's account.
+    func listColors(accessToken: String) async throws -> GCColors
+
     /// Fetches every page of events on a calendar within `[timeMin, timeMax]`.
     ///
     /// `updatedMin` selects the incremental mode; see

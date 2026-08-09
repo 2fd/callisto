@@ -17,6 +17,11 @@ final class GoogleCalendarManager {
   private(set) var calendars: [GoogleCalendar] = []
   private var version: UInt64 = 0
 
+  /// Color palettes, keyed by account. Accounts absent from the map — not yet
+  /// synced, or whose palette fetch failed — fall back to
+  /// ``ColorPalette/googleDefaults``.
+  private(set) var colorPalettes: [String: ColorPalette] = [:]
+
   var isEmpty: Bool {
     calendars.isEmpty
   }
@@ -49,6 +54,32 @@ final class GoogleCalendarManager {
 
   func get(calendarId: String) -> GoogleCalendar? {
     calendars.first { $0.calendarId == calendarId }
+  }
+
+  /// The color palette in force for an account.
+  func palette(for accountId: String) -> ColorPalette {
+    colorPalettes[accountId] ?? .googleDefaults
+  }
+
+  /// The color an event should be drawn in: its own when it has one, otherwise
+  /// the color of the calendar it lives on.
+  ///
+  /// Most events carry no `colorId` at all — Google only sets one when the user
+  /// deliberately recolors a single event — so the calendar's color is the
+  /// common answer. That one is resolved from the calendar's `colorId` rather
+  /// than taken from `backgroundColor`, because Google resolves the entry
+  /// against the same legacy table the `colors` endpoint serves: a Peacock
+  /// calendar arrives as `#9fe1e7` where the product draws `#039be5`. Only a
+  /// calendar with a custom RGB color has no ID to resolve, and there
+  /// `backgroundColor` is the real answer.
+  func color(for event: GoogleCalendarEvent, in calendar: GoogleCalendar) -> String {
+    palette(for: event.accountId).event(event.colorId) ?? color(for: calendar)
+  }
+
+  /// The color that stands for a calendar itself.
+  func color(for calendar: GoogleCalendar) -> String {
+    palette(for: calendar.accountId).calendar(calendar.colorId)
+      ?? calendar.backgroundColor
   }
 
   func forAccount(_ accountId: String) -> [GoogleCalendar] {
@@ -153,6 +184,7 @@ final class GoogleCalendarManager {
     for cal in toRemove { modelContext.delete(cal) }
     try? modelContext.save()
     calendars.removeAll { $0.accountId == accountId }
+    colorPalettes[accountId] = nil
     version &+= 1
   }
 
@@ -165,15 +197,12 @@ final class GoogleCalendarManager {
     let accountIds = await accounts.authenticated()
     guard !accountIds.isEmpty else { return [] }
 
-    let fetched = await withTaskGroup(
-      of: (String, [GCCalendarListEntry])?.self
-    ) { group in
+    let fetched = await withTaskGroup(of: AccountSync?.self) { group in
       for accountId in accountIds {
         group.addTask { [weak self] in
           guard let self else { return nil }
           do {
-            let entries = try await self.fetch(accountId: accountId)
-            return (accountId, entries)
+            return try await self.fetch(accountId: accountId)
           } catch {
             // Records health only — the cached calendar list is left intact.
             await self.accounts.recordSyncFailure(accountId, error: error)
@@ -181,7 +210,7 @@ final class GoogleCalendarManager {
           }
         }
       }
-      var out: [(String, [GCCalendarListEntry])] = []
+      var out: [AccountSync] = []
       for await result in group {
         if let result { out.append(result) }
       }
@@ -189,21 +218,46 @@ final class GoogleCalendarManager {
     }
 
     var results: [(String, String)] = []
-    for (accountId, entries) in fetched {
-      applySync(accountId: accountId, entries: entries)
+    for result in fetched {
+      let accountId = result.accountId
+      applySync(accountId: accountId, entries: result.entries)
+      if let colors = result.colors {
+        colorPalettes[accountId] = ColorPalette(colors)
+      }
       accounts.markSynced(accountId)
       accounts.recordSyncSuccess(accountId)
-      for entry in entries { results.append((accountId, entry.id)) }
+      for entry in result.entries { results.append((accountId, entry.id)) }
     }
 
     version &+= 1
     return results
   }
 
-  /// Fetches the calendar list for a single account via the Google Calendar API.
-  func fetch(accountId: String) async throws -> [GCCalendarListEntry] {
-    try await accounts.withToken(for: accountId) { token in
-      try await api.listCalendars(accessToken: token).items
+  /// One account's payload from a calendar-list sync cycle.
+  nonisolated struct AccountSync: Sendable {
+    let accountId: String
+    let entries: [GCCalendarListEntry]
+    /// `nil` when the palette fetch failed; the cached palette stays in force.
+    let colors: GCColors?
+  }
+
+  /// Fetches an account's calendar list and color palette on a single token.
+  ///
+  /// The palette is authenticated per account, so it cannot be fetched once and
+  /// shared. Its failure is swallowed rather than thrown: it must not cost the
+  /// account its calendar list, and the cached palette — or the built-in
+  /// defaults — covers the gap until the next cycle.
+  func fetch(accountId: String) async throws -> AccountSync {
+    try await accounts.withToken(for: accountId) { [api] token in
+      // `async let` children do not inherit this actor, so they capture `api`
+      // rather than `self`.
+      async let entries = api.listCalendars(accessToken: token).items
+      async let colors = try? api.listColors(accessToken: token)
+      return AccountSync(
+        accountId: accountId,
+        entries: try await entries,
+        colors: await colors
+      )
     }
   }
 
