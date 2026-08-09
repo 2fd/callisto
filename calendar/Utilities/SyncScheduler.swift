@@ -2,7 +2,7 @@ import Foundation
 
 /// Drives periodic sync by invoking an action on an interval.
 ///
-/// Owned by ``CalendarApp``. Starts once on launch (fires immediately then
+/// Owned by ``AppDelegate``. Starts once on launch (fires immediately then
 /// every `intervalMinutes`) and is restarted when the user changes
 /// ``UserSettings/refreshIntervalMinutes``.
 @MainActor

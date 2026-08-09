@@ -69,21 +69,27 @@ struct DaySectionHeader: View {
 #Preview("State Gallery - Loaded") {
     let fixture = EventPreviewFixture.loaded()
 
-    return EventListView(days: fixture.days)
+    return MenuBarPreviewStage {
+        PopoverChrome {
+            EventListView(days: fixture.days)
+                .frame(width: UI.Width)
+        }
         .environment(fixture.eventManager)
         .environment(fixture.eventManager.accounts)
-        .frame(width: UI.Width)
-        .background(Color(nsColor: .windowBackgroundColor))
+    }
 }
 
 #Preview("State Gallery - Empty") {
     let fixture = EventPreviewFixture.empty()
 
-    return EventListView(days: [])
+    return MenuBarPreviewStage {
+        PopoverChrome {
+            EventListView(days: [])
+                .frame(width: UI.Width)
+                .padding(.vertical, 8)
+                .padding(.horizontal, 8)
+        }
         .environment(fixture.eventManager)
         .environment(fixture.eventManager.accounts)
-        .frame(width: UI.Width)
-        .padding(.vertical, 8)
-        .padding(.horizontal, 8)
-        .background(Color(nsColor: .windowBackgroundColor))
+    }
 }

@@ -2,149 +2,256 @@
 
 ## Tech Stack
 
-- **Language:** Swift
-- **UI:** SwiftUI (menu bar popover, no main window)
-- **Data persistence:** SwiftData (events, account metadata)
-- **Secrets:** macOS Keychain (OAuth tokens)
-- **Auth:** Google OAuth 2.0 (installed app / PKCE flow)
-- **API:** Google Calendar API v3
+- **Language:** Swift (`SWIFT_VERSION = 5.0`, with `SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor`
+  and `SWIFT_APPROACHABLE_CONCURRENCY = YES` — types are main-actor isolated by default)
+- **UI:** SwiftUI content hosted by AppKit. There is no SwiftUI `App` — `main.swift`
+  installs `AppDelegate`, which owns an `NSStatusItem` (`MenuBarController`), a borderless
+  `NSPanel` for the popover (`MenuBarPanel`), and an `NSWindow` for Settings
+  (`SettingsWindowController`). No Dock icon (`LSUIElement = YES`), no main window.
+  See [Why not `MenuBarExtra`](#why-not-menubarextra).
+- **State:** Observation framework (`@Observable`). No Combine, no `@Query`.
+- **Persistence:** SwiftData (accounts, calendars, events, attendees, attachments, reminders)
+- **Secrets:** macOS Keychain (OAuth tokens only)
+- **Preferences:** `UserDefaults` behind the `SettingsStore` protocol
+- **Auth:** Google OAuth 2.0 installed-app flow with PKCE, via `ASWebAuthenticationSession`
+- **API:** Google Calendar API v3 over bare `URLSession` + hand-written `Codable` DTOs
+- **Dependencies (SPM):** [Sparkle](https://github.com/sparkle-project/Sparkle) 2.9.x for
+  auto-update — the only third party. Do not add more without a strong reason;
+  everything else is Apple-native.
 - **Platform:** macOS 14.0+
 
-## Architecture
+## Project Structure
 
 ```
 calendar/
-├── App/                    # App entry point, menu bar setup
-├── Models/                 # SwiftData models (Account, CalendarEvent, etc.) + value types like EventDay
+├── App/                       # main.swift + AppDelegate — dependency construction, wiring
+├── Models/
+│   ├── *.swift                # SwiftData @Model types + EventEntry / EventDay value types
+│   ├── *Mock.swift            # #if DEBUG preview fixtures
+│   └── GoogleCalendar/        # GC* — Codable DTOs, 1:1 with the Google API JSON
 ├── Services/
-│   ├── Auth/               # Google OAuth, token management
-│   ├── Keychain/           # Keychain wrapper for secrets
-│   └── GoogleCalendar/     # Google Calendar API client
+│   ├── Auth/                  # AuthConfig, PKCEHelper, AuthPresentationProvider
+│   ├── Keychain/              # KeychainService, OAuthTokens, KeychainError
+│   └── Google/                # The three managers + GoogleCalendarAPI + APIError
 ├── Views/
-│   ├── MenuBar/            # Menu bar icon, popover
-│   ├── Events/             # Event list, event detail
-│   ├── Accounts/           # Account management, add/remove
-│   └── Settings/           # Preferences (refresh interval, etc.)
-└── Utilities/              # Date helpers, extensions
+│   ├── MenuBar/               # Status item, panel, chrome, label, right-click menu
+│   ├── Events/                # Event list, rows, context menu, preview fixtures
+│   ├── Accounts/              # NoAccountsView
+│   └── Settings/              # Settings window, updates section
+└── Utilities/                 # Schedulers, extensions, Logger, Constants, AppInfo
 ```
 
-## Key Design Decisions
+## Architecture — three managers, one chain
 
-- **Menu bar only:** Uses `MenuBarExtra` — no Dock icon, no main window.
-- **Multi-account:** Each Google account stored as a SwiftData `Account` entity. OAuth tokens stored in Keychain keyed by account ID.
-- **Keychain for secrets:** Never persist OAuth tokens in SwiftData or UserDefaults. All tokens (access + refresh) go through the Keychain wrapper.
-- **Background refresh:** Timer-based polling of the Google Calendar API. Respect API rate limits.
-- **No external dependencies:** Use Foundation `URLSession` for networking. No third-party packages.
+There is no service/store split and no snapshot pipeline. Each manager is
+`@MainActor @Observable`, owns its own `ModelContext`, mirrors its rows into an
+in-memory array, and exposes `iter*()` read methods to SwiftUI.
 
-## Architectural Considerations — 5 Distinct Owners
-
-| Concern | Owner | Type |
+| Concern | Owner | Notes |
 |---|---|---|
-| Sync + Auth + Timer | `CalendarService` | `Sendable` class |
-| Account & Calendar CRUD | `AccountService` | `@MainActor @Observable` |
-| Settings | `UserSettings` | `@MainActor @Observable` |
-| Event view state (read-only) | `CalendarStore` | `@MainActor @Observable` |
-| Account/calendar view state (read-only) | `AccountStore` | `@MainActor @Observable` |
+| Accounts, OAuth consent, Keychain, token refresh | `GoogleAccountManager` | leaf of the chain |
+| Calendar list + per-calendar visibility | `GoogleCalendarManager` | holds `accounts` |
+| Events, sync orchestration, RSVP/delete mutations | `GoogleCalendarEventManager` | holds `calendars` (and `calendars.accounts`) |
+| User preferences | `UserSettings` | `SettingsStore`-backed, computed properties |
+| HTTP transport | `GoogleCalendarAPI` | `nonisolated struct`, stateless, `Sendable` |
 
-### CalendarStore (event-only read layer)
+`AppDelegate.applicationDidFinishLaunching` builds one `ModelContainer` and one
+`GoogleCalendarEventManager`; that manager constructs `GoogleCalendarManager`, which
+constructs `GoogleAccountManager`. `AppDelegate.inject(_:)` reaches through
+`eventManager.accounts` / `eventManager.calendars` to put all three into the SwiftUI
+environment. Views resolve them with `@Environment(GoogleCalendarEventManager.self)` etc.
 
-- Stores only events, scoped to a rolling `[yesterday, today + 31 days]` window.
-- Receives new event data via `update(account:events:)` — called once per account by the snapshot dispatcher in `CalendarApp`. Upserts events (plus attendees, attachments, reminders) and deletes stale events scoped to that account.
-- `prune()` is public and deletes events with `endDate < yesterday`. External code (e.g. the snapshot dispatcher) decides when to call it.
-- Exposes **iterator methods** that SwiftUI views consume in `ForEach`:
-  - `iter(settings: UserSettings? = nil) -> [CalendarEvent]` — chronologically ordered events, with structural filters (enabled account, visible calendar, not cancelled, not ended). When `settings` is provided, applies `showDaysAhead` and `showDeclinedEvents`.
-  - `iterDays(settings: UserSettings? = nil) -> [EventDay]` — one entry per day with at least one event. Each `EventDay` has a `day: Date` and `iter()` returning that day's events flat-ordered by `startDate`.
-- `nextEvent: CalendarEvent?` — recomputed on every `update(account:events:)` / `prune()` call.
-- Uses an internal `version` counter read inside `iter()` / `iterDays()` so `@Observable` tracks method-based access and SwiftUI views re-render after mutations.
+The panel and the settings window are hosted separately, so **each root must be passed
+through `inject(_:)`** — there is no single scene graph to inherit from.
 
-### AccountStore (account/calendar read layer)
+### Observation contract
 
-- Mirrors `CalendarStore`'s role but for accounts and their calendar metadata.
-- Exposes `accounts: [Account]`, refreshed via `refreshData()` after `AccountService` mutations.
-- `update(account:calendars:)` upserts the calendar list for an account from a sync snapshot and removes stale calendars.
+`@Observable` only auto-tracks *stored property* access. Because the managers expose data
+through **methods**, each keeps a `private var version: UInt64` that every `iter*()` reads
+(`_ = version`) and every mutation bumps (`version &+= 1`). **If you add a read method or a
+mutation, keep that pattern or views will not re-render.** `UserSettings` does the equivalent
+by hand with `access(keyPath:)` in getters and `withMutation(keyPath:)` in setters, because
+its properties are computed over `UserDefaults`.
 
-### CalendarService (sync orchestration)
+### Sync
 
-- Owns `SyncTimer`, `AccountSync`, `GoogleAuthService`, `SyncStatus`, backoff logic, and the `sync()` entry point.
-- Fetches calendar and event data from the Google Calendar API and produces `SyncSnapshot` values — immutable `Sendable` structs.
-- Never writes to `ModelContext` directly. Produces snapshots via `AsyncStream` and a `@MainActor var onSnapshot: ((SyncSnapshot) -> Void)?` callback that `CalendarApp` wires to fan snapshots out per-account to `AccountStore` / `CalendarStore`.
-- `addAccount()` runs the OAuth consent flow and returns a `NewAccountResult` — does not write to SwiftData.
+Driven by `SyncScheduler` (fires immediately, then every `UserSettings.refreshIntervalMinutes`;
+restarted when that setting changes). `GoogleCalendarEventManager.sync()` is re-entrancy
+guarded by `isSyncing`.
 
-### AccountService (account & calendar CRUD)
+```
+sync()
+ └─ calendars.sync()
+     └─ accounts.authenticated()      refresh every canRead account's token in parallel
+     │                                (one in-flight refresh per account, coalesced via refreshTasks)
+     └─ GET /users/me/calendarList    per account, in parallel → upsert + delete stale
+     └─ returns [(accountId, calendarId)]
+ └─ GET /calendars/{id}/events        per pair, in parallel
+        singleEvents=true, orderBy=startTime, maxResults=250,
+        timeMin=startOfToday, timeMax=+31d
+ └─ applySync(...)                    upsert events, replace attendees/attachments/reminders,
+                                      delete events absent from the response
+ └─ prune()                           delete events with endDate < yesterday
+```
 
-- Owns all SwiftData writes for accounts and calendars, plus Keychain cleanup.
-- `insertAccount(from:)` creates an Account from a `NewAccountResult`, saves tokens to Keychain, and triggers initial sync.
-- `removeAccount(_:)`, `toggleAccountEnabled(_:)`, `toggleCalendarVisible(_:)` mutate SwiftData and notify downstream.
-- After each mutation, calls `accountStore.refreshData()` and `syncService.updateAccounts(...)`.
+Fetch window is always 31 days; `UserSettings.showDaysAhead` is a **display** filter applied
+at render time, so the local cache always holds a full month.
 
-### AccountSync (actor for token lifecycle)
+A 401/403 from any read is treated as a revoked scope: `markReadPermissionDenied` +
+`logout(accountId:)`, which drops that account's cached calendars and events. Settings then
+shows a "Grant read permission" row that re-runs the OAuth flow.
 
-- `AccountSync` is a dedicated `actor` that manages OAuth token refresh and validation.
-- It owns the logic for `validAccessToken(for:)` and `refreshTokens(for:)`, serializing Keychain reads/writes and token refresh network calls.
-- `CalendarService` calls `AccountSync` to obtain valid access tokens before making API requests.
-- `GoogleAuthService` retains only the initial OAuth consent flow (`startOAuthFlow`); all token lifecycle logic lives in `AccountSync`.
+### Permissions
 
-### UserSettings (user preferences)
+Scopes are granular and *verified against what Google actually granted*, not what was
+requested. `OAuthTokens.grantedScopes` drives `canRead` (`calendar.readonly`) and
+`canWrite` (`calendar.events`); these are mirrored onto `GoogleAccount` and reconciled from
+the Keychain at launch. UI gates on them: read-only accounts sync but hide RSVP/delete
+actions. Event mutations additionally require `GoogleCalendar.canWriteEvents`
+(`accessRole` is `writer`/`owner`).
 
-- `@MainActor @Observable`, backed by a `SettingsStore` protocol (production: `UserDefaults`; tests/previews: `InMemorySettingsStore`).
-- Views read and write it directly — no proxy methods needed.
-- Passed into `CalendarStore.iter(settings:)` / `iterDays(settings:)` at call sites to apply display preferences.
+### Read path
+
+Views never resolve associations. `GoogleCalendarEventManager` returns bundles:
+
+- `iter(_ settings:) -> [EventEntry]` — chronological, filtered by window, account/calendar
+  visibility, `canRead`, cancelled status, and `showDeclinedEvents`. `EventEntry` carries
+  `(event, calendar, account)`.
+- `iterByDays(_ settings:) -> [EventDay]` — grouped per day; emits empty days when
+  `showEmptyDays` is on. `EventDay.iter()` returns that day's entries.
+- `next() -> GoogleCalendarEvent?` — next non-declined, non-cancelled event for the menu bar
+  label; prefers timed events over all-day ones.
+
+`MinuteScheduler` publishes `now` at each minute boundary; views that render relative time
+read `ticker.now` to register the dependency.
 
 ### Data flow
 
 ```
-                     CalendarApp (creates all, wires once)
-          ┌──────────┬──────────────┬──────────────┐
-          ▼          ▼              ▼              ▼
-  CalendarService     AccountService CalendarStore AccountStore
-  ┌──────────────┐  ┌─────────────┐ ┌────────────┐ ┌────────────┐
-  │ sync()       │  │ insertAcct  │ │ update(    │ │ accounts   │
-  │ addAccount() │  │ remove()    │ │   account, │ │ refresh()  │
-  │ SyncTimer    │  │ toggle()    │ │   events)  │ │ update(    │
-  │ AccountSync  │  │ toggleCal() │ │ prune()    │ │   account, │
-  │ onSnapshot   │  │ ModelContext│ │ iter()     │ │   calendars)│
-  │ SyncStatus   │  │ Keychain    │ │ iterDays() │ │ ModelContext│
-  └──────┬───────┘  └──────┬──────┘ │ nextEvent  │ └─────┬──────┘
-         │                 │        └─────┬──────┘       │
-         │ onSnapshot(SyncSnapshot) — dispatched per-account
-         └─────────────────┼──────────────┼──────────────┘
-                           │              │
-                    refreshData()   update(account:events:)
-                    update(account:calendars:)
-                           │              │
-                           └──────┬───────┘
-                                  ▼
-                           SwiftUI Views
-                           (ForEach over store.iterDays(settings:),
-                            accountStore.accounts for account list,
-                            store.nextEvent for menu bar label)
-
-    Views read/write UserSettings directly
-    Views pass UserSettings into store.iter*(settings:) calls
-    Views call syncService.sync() (→ onSnapshot → stores update)
-    Views call accountService.remove() (→ accountStore.refreshData)
+                    main.swift → AppDelegate
+                    ModelContainer + UserSettings + schedulers
+                              │
+                    GoogleCalendarEventManager
+                       ├── GoogleCalendarManager
+                       │      └── GoogleAccountManager ── Keychain
+                       └── GoogleCalendarAPI ── URLSession ── Google Calendar API v3
+                              │
+              inject(...) into MenuBarController (status item + panel)
+                        and SettingsWindowController
+                              │
+                    Views call iter*() / next() to read,
+                    call manager methods to mutate,
+                    read/write UserSettings directly
 ```
+
+## Why not `MenuBarExtra`
+
+`MenuBarExtra` renders its `label:` into a **template** image: alpha is kept, colour is
+discarded and replaced by the menu bar tint, so `ConferenceIconView`'s per-provider colour
+was flat white in the bar. It also hides its `NSStatusItem`, so right-clicks had to be
+stolen with a global `NSEvent` monitor matched on window class name.
+
+`MenuBarController` hosts the label in an `NSHostingView` inside the status item button
+instead, which keeps its colour, and gets both mouse buttons from
+`button.sendAction(on:)`. Two consequences to keep in mind:
+
+- **The panel is outside SwiftUI's scene graph**, so `@Environment(\.openWindow)` does not
+  work in it and there is no public way to open a `Window(id:)` scene from AppKit. Views
+  open windows through `@Environment(\.openWindows)` (`OpenWindowsAction`), which
+  `AppDelegate` backs with `SettingsWindowController`.
+- **The panel is not the key window when a link is followed**, so never dismiss it with
+  `NSApp.keyWindow?.close()` — that would close the settings window. Call
+  `dismissMenuBarPanel()`.
+
+Views handed to `MenuBarController` are built **once** and kept by the hosting view, so
+anything resolved outside a `body` is frozen at launch. `MenuBarStatusLabel` reads
+`eventManager.next()` inside its own `body` for exactly this reason.
+
+### Panel chrome and previews
+
+The panel is borderless, so `PopoverChrome` — not the window — draws the `.popover`
+material and the corner radius, and `PopoverContent` wraps itself in it. That is what keeps
+previews honest: a preview has no window, so anything the window contributed would silently
+vanish from the canvas. `MenuBarPreviewStage` (DEBUG) puts previews on a stand-in desktop so
+the material has something to blend with, and `MenuBarLabel`'s previews render the label on
+a menu bar strip next to a template-flattened copy — if the two rows ever match, the label
+has regressed to template rendering.
+
+## Conventions
+
+- Swift concurrency (`async`/`await`, `withTaskGroup`) throughout — no completion handlers.
+- DTOs (`GC*`) are `nonisolated ... Codable, Sendable`, mirror the API 1:1, carry a
+  `Reference:` doc link, and never escape the Services layer. Views and SwiftData models
+  consume them only through `init(from:)` / `update(from:)`.
+- SwiftData models are the only classes that are not value types. Persistence models must not
+  make network calls.
+- Keep views small; extract subviews into their own files past ~80 lines. Name files after the
+  primary type.
+- Preview fixtures live in `*Mock.swift` / `EventPreviewFixture.swift` and **must** stay inside
+  `#if DEBUG` — they ship in the app target.
+- Typed errors (`APIError`, `AuthError`, `KeychainError`,
+  `GoogleCalendarEventManager.MutationError`) with user-facing `errorDescription`.
+- Logging via `Logger.shared`; mark interpolations `privacy: .public` only for non-PII values.
+- Constants belong in `Utilities/Constants.swift` (`Constants`, `UI`, `DefaultsKey`,
+  `EventStatus`, `EventType`) — no stringly-typed literals at call sites.
+- Indentation is mixed across the codebase (2-space in newer files, 4-space in older ones).
+  Match the file you are editing.
+
+## Security rules
+
+- OAuth tokens go in the Keychain via `KeychainService` and **nowhere else** — never SwiftData,
+  never `UserDefaults`, never a log line.
+- The client ID comes from `GOOGLE_CLIENT_ID` in `Config.xcconfig` → `Info.plist` →
+  `AuthConfig.clientId`. There is no client secret (installed-app PKCE flow); do not add one.
+- The app is sandboxed with hardened runtime, `network.client`, and a keychain access group.
+  Do not widen entitlements to work around a problem.
 
 ## Build & Run
 
 ```bash
-# Open in Xcode
-open calendar.xcodeproj
+# Debug / test build (scheme: callisto, product: Callisto.app)
+xcodebuild -project calendar.xcodeproj -scheme callisto -configuration Debug -destination 'platform=macOS' build
 
-# Build from command line
-xcodebuild -scheme callisto -configuration Debug build
+# Unit + UI tests
+xcodebuild -project calendar.xcodeproj -scheme callisto -configuration Debug -destination 'platform=macOS' test
 
-# Run tests
-xcodebuild -scheme callisto -configuration Debug test
+# Nightly build installed to ~/Applications (bundle id dev.frami.callisto.nightly)
+make run
 ```
 
-**Important:** If `xcodebuild` is not available in your environment, ask the user to run the build/test commands and report back the results.
+`Config.xcconfig` is required and git-ignored — `cp Config.xcconfig.example Config.xcconfig`
+and set a real `GOOGLE_CLIENT_ID` (the placeholder builds but cannot authenticate).
 
-## Conventions
+**If `xcodebuild` is unavailable in your environment, ask the user to run the build/test
+commands and report back.**
 
-- Use Swift concurrency (async/await) throughout — no completion handlers.
-- Prefer value types (structs/enums) except for SwiftData `@Model` classes.
-- Keep views small; extract subviews into separate files when they exceed ~80 lines.
-- Name files after the primary type they contain.
-- Group related files in folders matching the architecture above.
-- Error handling: use typed Swift errors, surface user-facing messages in the UI.
+Build configurations: `Debug`, `Release`, `Nightly` (separate bundle id, icon, entitlements,
+and display name so it can be installed side by side).
+
+## Release
+
+`main` → semantic-release (`.releaserc.json`) → GitHub release → `scripts/prepare-release.sh`
+archives, signs with Developer ID, notarizes with `notarytool`, packages a zip + DMG, and
+generates an EdDSA-signed Sparkle appcast. In-app updates are served from `SUFeedURL` in the
+root `Info.plist`. Do not change `SUPublicEDKey`, the appcast URL, or the signing/notarization
+steps without coordinating a key rotation.
+
+CI (`.github/workflows/main.yml`, `pr.yml`) currently runs `build-for-testing` only — it
+compiles the tests but does not execute them. `pr.yml` runs only on the `run-macos-ci` label
+or manual dispatch.
+
+## Known gaps
+
+Do not assume these are handled; they are the current state, not the intended end state:
+
+- **Sync is full-scan.** No `syncToken`, no `updatedMin`, no conditional ETag requests.
+  `nextPageToken` is decoded but never followed, so `maxResults=250` silently truncates.
+- **No backoff.** `APIError.rateLimited` exists but nothing retries or throttles; all
+  `(account, calendar)` requests fire concurrently every cycle.
+- **Attendees, attachments and reminders are deleted and reinserted on every sync**, for every
+  event, changed or not.
+- **Managers are not unit-testable** — `GoogleCalendarAPI` is constructed inline with no
+  protocol seam. Tests cover DTO decoding, date parsing, PKCE, colors and model basics only.
+- Each manager owns a separate `ModelContext` on the shared container, and the in-memory
+  arrays — not SwiftData — are what the views read.
+- `try? modelContext.save()` swallows persistence errors; sync failures surface only in logs.

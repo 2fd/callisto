@@ -204,7 +204,6 @@
 			mainGroup = B0E4A7122F70A84400986DC4;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				B09BF2B52F8AF42200614B06 /* XCRemoteSwiftPackageReference "Stripes" */,
 				B01F07A72F95AB19008569CE /* XCRemoteSwiftPackageReference "Sparkle" */,
 			);
 			preferredProjectObjectVersion = 77;
@@ -767,14 +766,6 @@
 			requirement = {
 				kind = upToNextMajorVersion;
 				minimumVersion = 2.9.1;
-			};
-		};
-		B09BF2B52F8AF42200614B06 /* XCRemoteSwiftPackageReference "Stripes" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/eneko/Stripes";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 0.2.0;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */

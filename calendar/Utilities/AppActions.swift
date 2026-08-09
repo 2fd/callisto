@@ -6,8 +6,10 @@ enum AppWindow: String {
     case settings
 }
 
-/// Opens an ``AppWindow`` via the SwiftUI scene graph, closing the current key
-/// window and activating the app so the new window comes to the front.
+/// Opens an ``AppWindow``.
+///
+/// Injected by ``AppDelegate``, which owns the windows. Views call
+/// `openWindows(.settings)` and stay unaware of AppKit.
 struct OpenWindowsAction {
     fileprivate let handler: @MainActor (AppWindow) -> Void
 
@@ -15,31 +17,29 @@ struct OpenWindowsAction {
     func callAsFunction(_ window: AppWindow) {
         handler(window)
     }
+
+    init(_ handler: @escaping @MainActor (AppWindow) -> Void) {
+        self.handler = handler
+    }
 }
 
 extension EnvironmentValues {
     @Entry var openWindows: OpenWindowsAction = OpenWindowsAction { _ in }
 }
 
-/// Injects a real ``OpenWindowsAction`` that delegates to SwiftUI's
-/// `@Environment(\.openWindow)`. Apply this modifier inside a `Scene`'s
-/// content so the underlying `OpenWindowAction` is available.
-struct OpenWindowsModifier: ViewModifier {
-    @Environment(\.openWindow) private var openWindow
-
-    func body(content: Content) -> some View {
-        content.environment(\.openWindows, OpenWindowsAction { window in
-            NSApp.keyWindow?.close()
-            openWindow(id: window.rawValue)
-            NSApp.activate(ignoringOtherApps: true)
-        })
-    }
+extension Notification.Name {
+    /// Posted when something finishes an action that should close the menu bar
+    /// panel — following an event link, opening settings, pressing Escape.
+    static let dismissMenuBarPanel = Notification.Name(
+        "\(Constants.subsystem).dismissMenuBarPanel"
+    )
 }
 
-extension View {
-    /// Wires up `\.openWindows` so descendant views can call
-    /// `openWindows(.settings)` without talking to `NSApp` directly.
-    func openWindowsAction() -> some View {
-        modifier(OpenWindowsModifier())
-    }
+/// Closes the menu bar panel if it is open.
+///
+/// The panel is an ``MenuBarPanel``, not the key window, so callers must not
+/// reach for `NSApp.keyWindow` — that would close the settings window whenever
+/// the panel was not focused.
+func dismissMenuBarPanel() {
+    NotificationCenter.default.post(name: .dismissMenuBarPanel, object: nil)
 }

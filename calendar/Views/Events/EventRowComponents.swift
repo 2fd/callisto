@@ -55,10 +55,10 @@ struct OpenCalendarActionButton: View {
 func openEventLink(_ event: GoogleCalendarEvent, account: GoogleAccount) {
   if let meetURL = event.conferenceMeetURL(authuser: account.authuser) {
     NSWorkspace.shared.open(meetURL)
-    NSApp.keyWindow?.close()
+    dismissMenuBarPanel()
   } else if let url = event.calendarURL(authuser: account.authuser) {
     NSWorkspace.shared.open(url)
-    NSApp.keyWindow?.close()
+    dismissMenuBarPanel()
   }
 }
 
@@ -66,7 +66,7 @@ func openEventLink(_ event: GoogleCalendarEvent, account: GoogleAccount) {
 func openCalendarLink(for event: GoogleCalendarEvent, account: GoogleAccount) {
   if let url = event.calendarURL(authuser: account.authuser) {
     NSWorkspace.shared.open(url)
-    NSApp.keyWindow?.close()
+    dismissMenuBarPanel()
   }
 }
 
