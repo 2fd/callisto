@@ -1,0 +1,58 @@
+---
+import { Check, ChevronRight } from "@lucide/astro";
+
+const items = [
+  { label: "Open meeting" },
+  { label: "Open in Calendar" },
+  { separator: true },
+  { label: "Accept", checked: true },
+  { label: "Maybe" },
+  { label: "Decline" },
+  { separator: true },
+  { label: "Alice Chen", checked: true, muted: true },
+  { label: "Bob Ortega", muted: true },
+  { separator: true },
+  { label: "Delete", submenu: true, destructive: true, open: true },
+];
+---
+
+<div class="relative w-full max-w-[288px] lg:max-w-none lg:pr-[156px]">
+  <div
+    class="rounded-sm bg-[#22222F]/95 p-1.5 shadow-elevation-3 ring-1 ring-foreground/12 backdrop-blur"
+  >
+    {
+      items.map((item) =>
+        item.separator ? (
+          <div class="my-1.5 h-px bg-light/10" />
+        ) : (
+          <div
+            class:list={[
+              "flex items-center gap-2 rounded-xs px-2 py-1 text-sm",
+              item.open && "bg-light/[0.07]",
+              item.destructive ? "text-[#FF6B6B]" : "text-light/88",
+            ]}
+          >
+            <span class="flex size-3.5 shrink-0 items-center justify-center">
+              {item.checked && <Check class="size-3 text-light/70" />}
+            </span>
+            <span
+              class:list={["flex-1 truncate", item.muted && "text-light/64"]}
+            >
+              {item.label}
+            </span>
+            {item.submenu && <ChevronRight class="size-3.5 text-light/50" />}
+          </div>
+        ),
+      )
+    }
+  </div>
+
+  <div
+    class="mt-2 ml-auto w-[168px] rounded-sm bg-[#2B2B3D] p-1.5 shadow-elevation-3 ring-1 ring-foreground/12 lg:absolute lg:right-0 lg:bottom-0 lg:mt-0"
+  >
+    <p class="rounded-xs px-2 py-1 text-sm text-light/88">This event</p>
+    <p class="rounded-xs bg-primary/15 px-2 py-1 text-sm text-primary">
+      This and following
+    </p>
+  </div>
+</div>

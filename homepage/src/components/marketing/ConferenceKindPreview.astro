@@ -1,0 +1,40 @@
+---
+import { Video } from "@lucide/astro";
+import AppPanel from "@/components/marketing/AppPanel.astro";
+import AppEventRow from "@/components/marketing/AppEventRow.astro";
+
+const legend = [
+  { label: "Zoom", color: "#2D8CFF" },
+  { label: "Google Meet", color: "#FED812" },
+  { label: "Other link", color: "#34A853" },
+];
+---
+
+<div class="w-full max-w-[340px] space-y-3 lg:max-w-none">
+  <AppPanel>
+    <AppEventRow title="Customer call" time="13:00 – 14:00" conference="zoom" />
+    <AppEventRow
+      title="Sprint planning"
+      time="14:30 – 15:00"
+      color="#33B679"
+      conference="meet"
+    />
+    <AppEventRow
+      title="Vendor sync"
+      time="15:30 – 16:00"
+      color="#A38AD0"
+      conference="other"
+    />
+  </AppPanel>
+
+  <div class="flex flex-wrap gap-x-5 gap-y-2 px-2">
+    {
+      legend.map((item) => (
+        <span class="inline-flex items-center gap-1.5 text-xs text-light/60">
+          <Video class="size-3.5" style={`color:${item.color}`} />
+          {item.label}
+        </span>
+      ))
+    }
+  </div>
+</div>

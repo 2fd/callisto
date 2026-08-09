@@ -130,9 +130,18 @@
   }
   body {
     @apply bg-background text-foreground;
+    /* `relative` makes body the containing block for the absolutely positioned
+       planet below `lg`, so the `overflow-x: clip` here actually trims it
+       instead of letting it widen the document. `clip` rather than `hidden`
+       keeps scroll anchoring and any `position: sticky` intact. */
+    position: relative;
+    overflow-x: clip;
   }
   html {
     @apply font-sans;
+    /* Non-visible here stops body's overflow from being propagated to the
+       viewport, which is what lets body clip its own overflow. */
+    overflow-x: clip;
   }
   h1,
   h2,
@@ -153,7 +162,71 @@
   }
 }
 
+/* The planet is anchored to the document, not the viewport. A fixed planet
+   never leaves the screen, so it ends up glowing through the translucent
+   feature cards for the whole page; anchored to the top of the document it
+   belongs to the hero and scrolls away, while the keyframes above still drift
+   it upward for parallax. It is also pushed further right and scaled down on
+   narrow viewports, where the hero copy spans the full width and would
+   otherwise sit on top of the bright bands.
+
+   The edges are faded with a mask rather than gradient overlays painted in
+   `night`: the video is cut out to real transparency, so the fade holds over
+   whatever sits behind it and there is nothing to keep aligned.
+
+   Two things hide the edge of the video. `screen` makes its black background
+   blend away to nothing — the footage is near-black around the planet but not
+   the same near-black as the page, and any mask that ends on a colour
+   mismatch draws a visible ring where it terminates. Screen removes the
+   mismatch itself, so there is nothing left for the mask to betray.
+
+   The mask then only has to catch the far corners, and it is sized
+   `closest-side` to do it: a radial gradient defaults to `farthest-corner`, so
+   100% lands on the corner and the stops are still partly opaque where they
+   cross the edge midpoints — which is the square boundary you would otherwise
+   see. Sized to the closest side, the fade completes inside the box on every
+   axis. */
 .jupiter {
+  position: absolute;
+  top: 0;
+  left: 64%;
+  height: 34rem;
+  width: 34rem;
+
   animation: jupiter linear;
   animation-timeline: scroll();
+
+  mix-blend-mode: screen;
+
+  --jupiter-mask: radial-gradient(
+    closest-side circle,
+    #000 55%,
+    transparent 100%
+  );
+
+  -webkit-mask-image: var(--jupiter-mask);
+  mask-image: var(--jupiter-mask);
+  mask-repeat: no-repeat;
+}
+
+@media (min-width: 640px) {
+  .jupiter {
+    left: 56%;
+    height: 46rem;
+    width: 46rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .jupiter {
+    left: 50%;
+    height: 62.5rem;
+    width: 62.5rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .jupiter {
+    animation: none;
+  }
 }
