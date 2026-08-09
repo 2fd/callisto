@@ -3,22 +3,10 @@ import Button from "@/components/ui/Button.astro";
 
 interface Props {
   size?:
-    | "default"
-    | "sm"
-    | "lg"
-    | "xs"
-    | "icon"
-    | "icon-xs"
-    | "icon-sm"
-    | "icon-lg";
+    "default" | "sm" | "lg" | "xs" | "icon" | "icon-xs" | "icon-sm" | "icon-lg";
   class?: string;
   variant?:
-    | "default"
-    | "outline"
-    | "secondary"
-    | "ghost"
-    | "destructive"
-    | "link";
+    "default" | "outline" | "secondary" | "ghost" | "destructive" | "link";
 }
 
 const { size = "lg", class: className, variant = "default" } = Astro.props;

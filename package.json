@@ -14,10 +14,10 @@
   "license": "MIT",
   "packageManager": "pnpm@10.32.0",
   "devDependencies": {
-    "semantic-release": "^24.0.0",
     "@semantic-release/changelog": "^6.0.3",
-    "@semantic-release/exec": "^7.0.3",
+    "@semantic-release/exec": "^7.1.0",
     "@semantic-release/git": "^10.0.1",
-    "@semantic-release/github": "^11.0.0"
+    "@semantic-release/github": "^11.0.6",
+    "semantic-release": "^24.2.9"
   }
 }
