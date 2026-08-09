@@ -52,16 +52,15 @@ struct EventRowContextMenu: View {
 
   @ViewBuilder
   private var openSection: some View {
-    if event.conferenceMeetURL(authuser: account.authuser) != nil {
+    if entry.meetingURL != nil {
       Button("Open meeting") {
-        guard let url = event.conferenceMeetURL(authuser: account.authuser)
-        else { return }
+        guard let url = entry.meetingURL else { return }
         NSWorkspace.shared.open(url)
         dismissMenuBarPanel()
       }
     }
     Button("Open in Calendar") {
-      openCalendarLink(for: event, account: account)
+      entry.openInCalendar()
     }
   }
 
