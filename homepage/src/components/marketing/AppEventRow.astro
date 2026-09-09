@@ -88,13 +88,19 @@ const stripes = `repeating-linear-gradient(135deg, rgb(${style.tint} / 0.08) 0 6
   style={`opacity:${style.contentOpacity};background:${surface}`}
 >
   {
+    style.isStriped && (
+      <div class="absolute inset-0" style={`background:${stripes}`} />
+    )
+  }
+  {
     !timeOff && (
       <div
-        class="absolute inset-y-0.5 left-0 w-[3px] rounded-[1.5px]"
+        class="absolute inset-y-[6.5px] left-[6.5px] w-[3px] rounded-[1.5px]"
         style={`background:rgb(${style.tint})`}
       />
     )
   }
+  {hover && <div class="absolute inset-0 bg-white/[0.06]" />}
   {
     treatment === "bordered" && (
       <div
@@ -103,13 +109,12 @@ const stripes = `repeating-linear-gradient(135deg, rgb(${style.tint} / 0.08) 0 6
       />
     )
   }
-  {
-    style.isStriped && (
-      <div class="absolute inset-0" style={`background:${stripes}`} />
-    )
-  }
-  {hover && <div class="absolute inset-0 bg-white/[0.06]" />}
-  <div class="relative flex flex-col gap-0.5 px-3 py-1.5">
+  <div
+    class:list={[
+      "relative flex flex-col gap-0.5 py-1.5 pr-3",
+      timeOff ? "pl-3" : "pl-4",
+    ]}
+  >
     <div class="flex items-center gap-2">
       <span
         class:list={[

@@ -5,30 +5,35 @@ struct EventRowBackground: View {
   let style: EventRowStyle
   let isHovering: Bool
 
+  private var shape: RoundedRectangle {
+    RoundedRectangle(cornerRadius: UI.EventCornerRadius, style: .circular)
+  }
+
   var body: some View {
-    RoundedRectangle(cornerRadius: UI.EventCornerRadius)
+    shape
       .fill(surface)
       .overlay {
-        if style.treatment == .bordered {
-          RoundedRectangle(cornerRadius: UI.EventCornerRadius)
-            .strokeBorder(style.tint.opacity(0.35), lineWidth: 0.5)
-        }
         if style.isStriped {
           DiagonalStripesPattern(color: style.tint.opacity(0.08))
-            .clipShape(.rect(cornerRadius: UI.EventCornerRadius))
         }
       }
       .overlay(alignment: .leading) {
         if !style.isOutOfOffice {
-          RoundedRectangle(cornerRadius: 1.5)
+          RoundedRectangle(cornerRadius: UI.EventIndicatorCornerRadius, style: .circular)
             .fill(style.tint)
             .frame(width: UI.EventIndicatorWidth)
-            .padding(.vertical, 2)
+            .padding(.vertical, UI.EventIndicatorInset)
+            .padding(.leading, UI.EventIndicatorInset)
         }
       }
       .overlay {
-        RoundedRectangle(cornerRadius: UI.EventCornerRadius)
-          .fill(.primary.opacity(isHovering ? 0.06 : 0))
+        Color.primary.opacity(isHovering ? 0.06 : 0)
+      }
+      .clipShape(shape)
+      .overlay {
+        if style.treatment == .bordered {
+          shape.strokeBorder(style.tint.opacity(0.35), lineWidth: 0.5)
+        }
       }
       .opacity(style.contentOpacity)
   }

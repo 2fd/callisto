@@ -68,6 +68,9 @@ enum UI {
     static let PanelFooterHeight = CGFloat(32)
     static let EventCornerRadius = CGFloat(8)
     static let EventIndicatorWidth = CGFloat(3)
+    static let EventIndicatorCornerRadius = EventIndicatorWidth / 2
+    // Concentric corners: outer radius = inner radius + inset.
+    static let EventIndicatorInset = EventCornerRadius - EventIndicatorCornerRadius
 
     /// Gap between the bottom of the menu bar and the top of the panel.
     static let PanelGap = CGFloat(6)
