@@ -39,8 +39,9 @@ struct EventListView: View {
                     }
                 )
             }
+            // A second flexible maxHeight frame lets AppKit keep the old window
+            // height after filtering. This exact, capped height must be the outer frame.
             .frame(height: contentHeight > 0 ? min(contentHeight, maxHeight) : nil)
-            .frame(maxHeight: maxHeight)
             .onPreferenceChange(ContentHeightKey.self) { height in
                 contentHeight = height
             }
