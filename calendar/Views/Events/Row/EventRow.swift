@@ -25,7 +25,8 @@ struct EventRow: View {
     }
     .opacity(style.contentOpacity)
     .padding(.vertical, 6)
-    .padding(.horizontal, 12)
+    .padding(.leading, style.isOutOfOffice ? 12 : UI.EventIndicatorWidth + 2 * UI.EventIndicatorInset)
+    .padding(.trailing, 12)
     .contentShape(Rectangle())
     .onTapGesture {
       entry.open()
