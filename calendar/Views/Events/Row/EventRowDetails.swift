@@ -3,8 +3,7 @@ import SwiftUI
 /// What an event carries besides its title and its hours: where it is, and how
 /// to join it.
 ///
-/// Both inherit the row's foreground rather than setting their own, so they dim
-/// with it — see ``EventRow``'s use of ``EventRowStyle/detail``.
+/// Location uses secondary text; the video icon preserves its provider color.
 struct EventRowDetails: View {
   let event: GoogleCalendarEvent
 
@@ -17,11 +16,7 @@ struct EventRowDetails: View {
     }
 
     if event.conferenceMeetURL != nil {
-      if let provider = event.conferenceProvider {
-        ConferenceLabelView(provider: provider)
-      } else {
-        ConferenceIconView(event: event, branded: false)
-      }
+      ConferenceIconView(event: event)
     }
   }
 }

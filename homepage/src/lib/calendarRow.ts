@@ -1,18 +1,8 @@
 /**
- * How the app paints an event row, ported so the previews on this page can be
- * drawn from the same rules instead of from hand-picked hex values.
- *
- * The three functions below mirror, in order:
- *
- * - `ColorPalette.swift` — the Google Calendar palettes, as Google renders them
- *   today rather than the pastel values its `colors` endpoint still serves.
- * - `Color.toned(_:forDarkSurface:)` — the same colors pulled back for a dark
- *   list, which is the only surface this page ever shows.
- * - `Color.readable(on:)` — white or near-black, whichever survives on the
- *   toned fill.
- *
- * A row here therefore lands on the same fill, and the same text color, as the
- * running app. When the app's toning constants move, move them here too.
+ * Event palette and rail toning mirror ColorPalette.swift and Color.toned().
+ * EventRowStyle uses system labels on quiet surfaces; these previews use the
+ * dark equivalents. Keep row geometry and fills in AppEventRow in sync with
+ * EventRow and EventRowBackground.
  */
 
 /** The eleven event colors, keyed the way `ColorPalette` names them. */
@@ -154,11 +144,11 @@ function linear(channel: number): number {
  * `EventRowStyle.Treatment`.
  */
 export type RowTreatment =
-  /** A meeting in progress: the event's color, swept by a moving sheen. */
+  /** A meeting in progress: a subtle tint and stronger title. */
   | "ongoing"
   /** Declined, cancelled, or unanswered — outlined rather than filled. */
   | "bordered"
-  /** The default: a solid block of the event's color. */
+  /** The default: a neutral surface with a calendar-color rail. */
   | "filled";
 
 export interface RowStyleInput {
@@ -177,8 +167,6 @@ export interface RowStyle {
   treatment: RowTreatment;
   /** Toned channels, for `rgb(… / a)`. */
   tint: string;
-  /** Text that sits directly on the tint. */
-  onTint: string;
   title: string;
   titleWeight: number;
   detail: string;
@@ -197,23 +185,16 @@ export function rowStyle({
   struckThrough = false,
   past = false,
 }: RowStyleInput): RowStyle {
-  // Toned first, then judged: the readable color has to contrast with what is
-  // actually on screen, not with the palette value.
+  // The rail keeps the same toned calendar color as the native app.
   const tintHex = toned(color);
   const tint = channels(tintHex);
-  const onTint = channels(readable(tintHex));
-  const isBordered = treatment === "bordered";
 
   return {
     treatment,
     tint,
-    onTint,
-    // A bordered row is not painted in the event's color, so its text lands on
-    // the panel surface and takes the tint itself. Every other row needs the
-    // color that survives on top of the fill.
-    title: isBordered ? `rgb(${tint})` : `rgb(${onTint})`,
-    titleWeight: isBordered ? 300 : 500,
-    detail: isBordered ? `rgb(${tint})` : `rgb(${onTint} / 0.85)`,
+    title: "#f2f2f2",
+    titleWeight: treatment === "ongoing" ? 500 : 400,
+    detail: "#ababab",
     isStriped: tentative && treatment === "filled",
     isStruckThrough: struckThrough,
     showsAccessories: !past,

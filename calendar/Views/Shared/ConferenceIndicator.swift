@@ -3,9 +3,7 @@ import SwiftUI
 /// Icon indicating the type of conference link (Zoom, Google Meet, or generic video).
 struct ConferenceIconView: View {
   let event: GoogleCalendarEvent
-  /// Draw in the provider's brand color. The menu bar needs it — colour is the
-  /// only thing distinguishing providers there — while a row inherits the
-  /// foreground of the event it sits on.
+  /// Draw in the provider's brand color in both the menu bar and event rows.
   var branded: Bool = true
 
   var body: some View {
@@ -18,7 +16,7 @@ struct ConferenceIconView: View {
           : AnyShapeStyle(.foreground)
       )
       .frame(width: 14, height: 14)
-      .help("Has meeting link")
+      .help(event.conferenceProvider.map { "Has \($0.rawValue) link" } ?? "Has meeting link")
   }
 }
 

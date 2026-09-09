@@ -1,12 +1,5 @@
 ---
-/**
- * One row of the app's event list, drawn the way `EventRow` draws it: a solid
- * block of the event's own Google Calendar color, with the text color that
- * survives on top of it.
- *
- * Everything visual comes from `rowStyle()`, the port of `EventRowStyle` — this
- * component only lays it out, exactly as the app's view does.
- */
+/** Matches EventRow: neutral surface, calendar rail, and semantic time-off fill. */
 import {
   CircleMinus,
   Gift,
@@ -39,6 +32,7 @@ interface Props {
   /** The event's color, untoned — a Google palette value. */
   color?: string;
   treatment?: RowTreatment;
+  outOfOffice?: boolean;
   /** Tentative: diagonal stripes over the fill. */
   tentative?: boolean;
   /** Declined or cancelled: the title and hours are struck through. */
@@ -61,6 +55,7 @@ const {
   time,
   color,
   treatment = "filled",
+  outOfOffice = false,
   tentative = false,
   struckThrough = false,
   past = false,
@@ -79,79 +74,42 @@ const shownBadges = (Object.keys(badgeIcons) as BadgeKind[]).filter((badge) =>
   badges.includes(badge),
 );
 
-/** The fill's opacity: dimmed under the pointer, as in `fillOpacity`. */
-const fillOpacity = hover ? 0.85 : 1;
-const stripeOpacity = hover ? 0.28 : 0.18;
-
-const fill = `rgb(${style.tint})`;
-const sheen = `linear-gradient(90deg,
-  rgb(${style.onTint} / 0) 0%,
-  rgb(${style.onTint} / 0.16) 34%,
-  rgb(${style.onTint} / 0.32) 50%,
-  rgb(${style.onTint} / 0.16) 66%,
-  rgb(${style.onTint} / 0) 100%)`;
-const stripes = `repeating-linear-gradient(135deg,
-  rgb(${style.onTint} / ${stripeOpacity}) 0 6px,
-  transparent 6px 18px)`;
+const timeOff = outOfOffice || badges.includes("outOfOffice");
+const surface = timeOff
+  ? "rgb(255 59 48 / 0.18)"
+  : treatment === "ongoing"
+    ? `rgb(${style.tint} / 0.14)`
+    : "rgb(255 255 255 / 0.025)";
+const stripes = `repeating-linear-gradient(135deg, rgb(${style.tint} / 0.08) 0 6px, transparent 6px 18px)`;
 ---
 
 <div
-  class:list={["relative", className]}
-  style={`opacity:${style.contentOpacity}`}
+  class:list={["relative overflow-hidden rounded-[8px]", className]}
+  style={`opacity:${style.contentOpacity};background:${surface}`}
 >
   {
-    /* The fill is inset 4px from the row edge, so the content padding below
-      keeps the text off it — the same offsets the app uses. */
-  }
-  {
-    treatment === "ongoing" && (
+    !timeOff && (
       <div
-        class="absolute inset-y-0 right-1 left-1 overflow-hidden rounded-[6px]"
-        style={`background:${fill};opacity:${hover ? 0.9 : 1}`}
-      >
-        <div
-          class="sheen absolute inset-y-0 w-[58%]"
-          style={`background:${sheen}`}
-        />
-      </div>
+        class="absolute inset-y-0.5 left-0 w-[3px] rounded-[1.5px]"
+        style={`background:rgb(${style.tint})`}
+      />
     )
   }
-
   {
     treatment === "bordered" && (
-      <>
-        <div
-          class="absolute inset-y-0 right-1 left-1 rounded-xs bg-light/[0.05]"
-          style={`opacity:${hover ? 0.85 : 1}`}
-        />
-        <div
-          class="absolute inset-y-0 right-1 left-1 rounded-xs border"
-          style={`border-color:rgb(${style.tint} / 0.5)`}
-        />
-      </>
+      <div
+        class="absolute inset-0 rounded-[8px] border-[0.5px]"
+        style={`border-color:rgb(${style.tint} / 0.35)`}
+      />
     )
   }
-
   {
-    treatment === "filled" && (
-      <>
-        <div
-          class="absolute inset-y-0 right-1 left-1 rounded-[6px]"
-          style={`background:${fill};opacity:${fillOpacity}`}
-        />
-        {/* Drawn over the fill rather than under it, so the pattern still
-          reads once the row is opaque. */}
-        {style.isStriped && (
-          <div
-            class="absolute inset-y-0 right-1 left-1 rounded-[6px]"
-            style={`background:${stripes}`}
-          />
-        )}
-      </>
+    style.isStriped && (
+      <div class="absolute inset-0" style={`background:${stripes}`} />
     )
   }
-
-  <div class="relative flex flex-col gap-0.5 py-1 pr-2.5 pl-3.5">
+  {hover && <div class="absolute inset-0 bg-white/[0.06]" />}
+  <div class="relative flex flex-col gap-0.5 px-3 py-1.5">
     <div class="flex items-center gap-2">
       <span
         class:list={[
@@ -167,7 +125,7 @@ const stripes = `repeating-linear-gradient(135deg,
         inlineTime && time && (
           <span
             class:list={[
-              "shrink-0 text-[10px] leading-3",
+              "shrink-0 text-[11px] leading-[13px]",
               style.isStruckThrough && "line-through",
             ]}
             style={`color:${style.detail}`}
@@ -200,7 +158,7 @@ const stripes = `repeating-linear-gradient(135deg,
         <div class="flex items-center gap-2" style={`color:${style.detail}`}>
           <span
             class:list={[
-              "flex-1 text-[10px] leading-3",
+              "flex-1 text-[11px] leading-[13px]",
               style.isStruckThrough && "line-through",
             ]}
           >
@@ -211,47 +169,15 @@ const stripes = `repeating-linear-gradient(135deg,
             <MapPin class="size-2.5 shrink-0 opacity-70" title={location} />
           )}
 
-          {style.showsAccessories &&
-            conference &&
-            (conference === "other" ? (
-              <Video class="size-3.5 shrink-0" title="Has meeting link" />
-            ) : (
-              <span
-                class="shrink-0 text-[10px] leading-3 font-bold"
-                title={`Has ${conference} link`}
-              >
-                {conference}
-              </span>
-            ))}
+          {style.showsAccessories && conference && (
+            <Video
+              class="size-3.5 shrink-0 fill-current"
+              style={`color:${conference === "zoom" ? "#2d8cff" : conference === "meet" ? "#fed812" : "#34a853"}`}
+              title={`Has ${conference === "other" ? "meeting" : conference} link`}
+            />
+          )}
         </div>
       )
     }
   </div>
 </div>
-
-<style>
-  /* One sweep across the row, then a pause parked off the trailing edge —
-     the cycle `OngoingEventBackground` runs: 2.4s of travel, 1.6s of rest. */
-  @keyframes callisto-sheen {
-    0% {
-      transform: translateX(-100%);
-    }
-    60%,
-    100% {
-      transform: translateX(272%);
-    }
-  }
-
-  .sheen {
-    animation: callisto-sheen 4s linear infinite;
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .sheen {
-      /* Where the band sits at the midpoint of its sweep, which is what the
-         app parks it at when motion is reduced. */
-      animation: none;
-      transform: translateX(86%);
-    }
-  }
-</style>

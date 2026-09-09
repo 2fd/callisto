@@ -1,6 +1,7 @@
 ---
 import MarketingLayout from "@/layouts/MarketingLayout.astro";
 import SiteHeader from "@/components/marketing/SiteHeader.astro";
+import AgendaPreview from "@/components/marketing/AgendaPreview.astro";
 import HeroSection from "@/components/marketing/HeroSection.astro";
 import DownloadButton from "@/components/marketing/DownloadButton.astro";
 import FeatureSection from "@/components/marketing/FeatureSection.astro";
@@ -39,8 +40,8 @@ import jupiterVideo from "@/assets/jupiter.mp4";
               <span class="text-primary">optimized for meetings</span>
             </h1>
             <p class="max-w-98 text-base leading-7 text-light/72">
-              Callisto gives you direct access to all your meetings in the most
-              convenient way.
+              Your day, neatly arranged in the menu bar. See what’s next, find
+              your meeting, and join with a click.
             </p>
           </div>
         </Fragment>
@@ -66,6 +67,7 @@ import jupiterVideo from "@/assets/jupiter.mp4";
             >
           </a>
         </Fragment>
+        <AgendaPreview slot="visual" />
       </HeroSection>
     </section>
   </Fragment>
@@ -95,7 +97,7 @@ import jupiterVideo from "@/assets/jupiter.mp4";
         slot="copy"
         eyebrow="Zoom or Meet"
         heading="Know which call<br />before you click"
-        description="Every event carrying a conference link says which kind it is right on the row — zoom, meet, or a plain video mark for anything else — so you know what is about to open."
+        description="A small, colored video icon keeps meeting links easy to spot: blue for Zoom, yellow for Meet, and green for other video links. Hover to see the provider before you join."
       />
 
       <ConferenceKindPreview slot="visual" />

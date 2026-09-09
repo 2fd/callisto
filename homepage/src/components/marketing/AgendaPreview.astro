@@ -1,0 +1,62 @@
+---
+import AppPanel from "@/components/marketing/AppPanel.astro";
+import AppDayHeader from "@/components/marketing/AppDayHeader.astro";
+import AppEventRow from "@/components/marketing/AppEventRow.astro";
+import { eventPalette } from "@/lib/calendarRow";
+---
+
+<div class="w-[320px] max-w-full">
+  <div
+    class="mb-3 flex h-8 items-center justify-end gap-4 rounded-md bg-black/30 px-3 text-[11px] text-white/80"
+  >
+    <span>◷ Vista Standup in 12m</span>
+    <span>Thu Apr 23</span>
+  </div>
+  <AppPanel month="Apr 2026">
+    <AppDayHeader day="Thu 23" />
+    <AppEventRow title="Vista Standup" time="12:45 – 13:15" color="#7fa5a7" />
+    <AppEventRow
+      title="Out of office"
+      time="12:55 – 13:10"
+      compact
+      inlineTime
+      outOfOffice
+    />
+    <AppEventRow
+      title="Omni SOC2 Compliance"
+      time="14:30 – 16:30"
+      color="#7fa5a7"
+    />
+    <AppDayHeader day="Fri 24" />
+    <AppEventRow
+      title="Día de acción por la tolerancia"
+      color={eventPalette.sage}
+      compact
+    />
+    <AppEventRow
+      title="Out of office"
+      time="11:55 – 13:15"
+      compact
+      inlineTime
+      outOfOffice
+    />
+    <AppEventRow
+      title="Vista Standup"
+      time="12:45 – 13:15"
+      color="#7fa5a7"
+      conference="zoom"
+    />
+    <AppEventRow
+      title="Daily Sync – Cobot"
+      time="13:30 – 14:00"
+      color="#7fa5a7"
+      conference="meet"
+    />
+    <AppEventRow
+      title="Tech Leadership Sync"
+      time="15:00 – 16:00"
+      color="#7fa5a7"
+      conference="meet"
+    />
+  </AppPanel>
+</div>

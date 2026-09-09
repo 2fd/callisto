@@ -11,14 +11,14 @@ struct EventRowStyle {
   /// How the row is painted, and with it which foreground the text needs.
   ///
   /// The three are exclusive and cover every row: an event is either happening
-  /// now, or something the user has waved off, or an ordinary block of color.
+  /// now, or something the user has waved off, or an ordinary event.
   enum Treatment {
-    /// A meeting in progress: the event's color, swept by a moving sheen.
+    /// A meeting in progress: a subtle tint and a stronger title.
     case ongoing
     /// Declined, cancelled, or unanswered — outlined rather than filled, so it
     /// stays legible without claiming the space a real commitment does.
     case bordered
-    /// The default: a solid block of the event's color.
+    /// The default: a quiet surface with a calendar-color indicator.
     case filled
   }
 
@@ -27,13 +27,13 @@ struct EventRowStyle {
   /// The event's color, toned for the surface it is painted on.
   let tint: Color
 
-  /// Text that sits directly on ``tint``.
-  let onTint: Color
+  /// Time off is the only ordinary row with a semantic color fill.
+  let isOutOfOffice: Bool
 
   /// The row's primary text color.
   let title: Color
 
-  /// A bordered row states its title more quietly: it is not a commitment.
+  /// Meetings in progress use a stronger title.
   let titleWeight: Font.Weight
 
   /// Times, icons, and anything else subordinate to the title.
@@ -62,37 +62,24 @@ struct EventRowStyle {
   init(entry: EventEntry, isDarkSurface: Bool, now: Date = .now) {
     let event = entry.event
 
-    // Toned first, then judged: `onTint` has to contrast with what is actually
-    // on screen, not with the palette value.
+    // Preserve the calendar color on the leading rail.
     let tintHex = Color.toned(entry.color, forDarkSurface: isDarkSurface)
     let tint = Color(hex: tintHex)
-    let onTint = Color.readable(on: tintHex)
 
     let treatment = Self.resolveTreatment(for: event, now: now)
-    let isBordered = treatment == .bordered
 
     self.treatment = treatment
     self.tint = tint
-    self.onTint = onTint
-    // A bordered row is not painted in the event's color, so its text lands on
-    // the window surface and takes the tint itself. Every other row is, and so
-    // needs the color that survives on top of it — out of office included, which
-    // carries its own `colorId` (Tomato) and needs no hard-coded red.
-    self.title = isBordered ? tint : onTint
-    self.titleWeight = isBordered ? .light : .medium
-    self.detail = isBordered ? tint : onTint.opacity(0.85)
+    self.isOutOfOffice = event.isOutOfOffice
+    self.title = Color(nsColor: .labelColor)
+    self.titleWeight = treatment == .ongoing ? .medium : .regular
+    self.detail = Color(nsColor: .secondaryLabelColor)
     self.isStruckThrough = event.isDeclined || event.isCancelled
     self.isCompact = event.isAllDay || event.isOutOfOffice
     self.showsInlineTime = event.isOutOfOffice && !event.isAllDay
     self.isStriped = event.isTentative && treatment == .filled
     self.showsAccessories = !event.isPast
     self.contentOpacity = event.isPast ? 0.4 : 1.0
-  }
-
-  /// The fill's opacity: dimmed under the pointer, and faded again with the
-  /// content when the event is past.
-  func fillOpacity(isHovering: Bool) -> Double {
-    (isHovering ? 0.85 : 1.0) * contentOpacity
   }
 
   private static func resolveTreatment(

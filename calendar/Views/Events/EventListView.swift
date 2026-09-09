@@ -31,16 +31,13 @@ struct EventListView: View {
                         }
                     }
                 }
+                .padding(.horizontal, 12)
+                .padding(.bottom, 12)
                 .background(
                     GeometryReader { geo in
                         Color.clear.preference(key: ContentHeightKey.self, value: geo.size.height)
                     }
                 )
-              
-              .padding(.top, 8)
-              .padding(.bottom, 20)
-              .padding(.horizontal, 4)
-              .padding(.trailing, 8)
             }
             .frame(height: contentHeight > 0 ? min(contentHeight, maxHeight) : nil)
             .frame(maxHeight: maxHeight)
@@ -56,13 +53,13 @@ struct DaySectionHeader: View {
     let date: Date
 
     var body: some View {
-      Text(date.format(f: "EEE dd").uppercased())
-            .font(.headline)
+      Text(date.format(f: "EEE d"))
+            .font(.system(size: 11))
             .fontWeight(.semibold)
             .foregroundStyle(.secondary)
-            .padding(.horizontal, 12)
-            .padding(.top, 12)
-            .padding(.bottom, 1)
+            .padding(.horizontal, 4)
+            .padding(.top, 8)
+            .padding(.bottom, 4)
     }
 }
 

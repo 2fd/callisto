@@ -17,25 +17,15 @@ struct EventRow: View {
   var body: some View {
     let style = EventRowStyle(entry: entry, isDarkSurface: colorScheme == .dark)
 
-    // The trailing spacer is what keeps the content block from stretching to
-    // the row's full width; the header's own spacer sets where its badges land.
-    HStack(alignment: .center) {
-      VStack(alignment: .leading, spacing: 2) {
-        header(style)
-
-        if !style.isCompact {
-          details(style)
-        }
+    VStack(alignment: .leading, spacing: 2) {
+      header(style)
+      if !style.isCompact {
+        details(style)
       }
-
-      Spacer()
     }
     .opacity(style.contentOpacity)
-    .padding(.vertical, 4)
-    // The fill is inset 4 from the row edge; these keep the content off its
-    // edge now that it is opaque, where the color bar used to do that job.
-    .padding(.leading, 14)
-    .padding(.trailing, 10)
+    .padding(.vertical, 6)
+    .padding(.horizontal, 12)
     .contentShape(Rectangle())
     .onTapGesture {
       entry.open()
@@ -57,7 +47,7 @@ struct EventRow: View {
   private func header(_ style: EventRowStyle) -> some View {
     HStack {
       Text(event.summary)
-        .font(.system(.body, design: .default))
+        .font(.system(size: 13))
         .fontWeight(style.titleWeight)
         .lineLimit(1)
         .strikethrough(style.isStruckThrough)
