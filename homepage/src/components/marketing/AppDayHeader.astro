@@ -1,16 +1,14 @@
 ---
-/**
- * A day's heading inside the panel, as `DaySectionHeader` writes it: the
- * weekday and the date, uppercased.
- */
+/** Mirrors DaySectionHeader's quiet, sentence-case date label. */
 interface Props {
-  /** The day, formatted "EEE dd" — e.g. "SAT 09". */
   day: string;
 }
-
 const { day } = Astro.props;
+const label = day.charAt(0).toUpperCase() + day.slice(1).toLowerCase();
 ---
 
-<p class="px-3 pt-2 pb-px text-[13px] leading-4 font-semibold text-light/55">
-  {day}
+<p
+  class="px-1 pt-2 pb-1 text-[11px] leading-[13px] font-semibold text-[#ababab]"
+>
+  {label}
 </p>

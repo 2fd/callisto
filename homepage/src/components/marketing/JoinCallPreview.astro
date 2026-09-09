@@ -11,8 +11,8 @@ import { eventPalette } from "@/lib/calendarRow";
     /* The pointer and its tag sit outside the panel: the panel clips to its own
       rounded corners, and the tag is meant to spill past them. */
   }
-  <div class="relative w-[280px]">
-    <AppPanel month="AUG 2026" synced="Synced 2 minutes ago">
+  <div class="relative w-[320px] max-w-full">
+    <AppPanel month="AUG 2026">
       <AppDayHeader day="MON 10" />
 
       <AppEventRow
@@ -67,11 +67,11 @@ import { eventPalette } from "@/lib/calendarRow";
         fixed height, so these offsets stay put. */
     }
     <MousePointer2
-      class="absolute top-[156px] left-[124px] size-5 fill-light text-night drop-shadow-[0_2px_6px_rgba(0,0,0,0.55)]"
+      class="absolute top-[172px] left-[124px] size-5 fill-light text-night drop-shadow-[0_2px_6px_rgba(0,0,0,0.55)]"
     />
 
     <span
-      class="absolute top-[174px] left-[148px] rounded-xs bg-primary px-2 py-1 text-[0.7rem] font-semibold whitespace-nowrap text-primary-foreground shadow-elevation-2"
+      class="absolute top-[190px] left-[148px] rounded-xs bg-primary px-2 py-1 text-[0.7rem] font-semibold whitespace-nowrap text-primary-foreground shadow-elevation-2"
     >
       Opening Zoom…
     </span>

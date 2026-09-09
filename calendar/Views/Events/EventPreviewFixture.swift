@@ -18,6 +18,7 @@ struct EventPreviewFixture {
             EventEntryMock.make(event: CalendarEventMock.allDay()),
             EventEntryMock.make(
                 event: CalendarEventMock.allDay(
+                    compositeId: "gallery/ooo-all-day",
                     summary: "Out of Office",
                     eventType: EventType.outOfOffice
                 )
@@ -25,6 +26,7 @@ struct EventPreviewFixture {
             EventEntryMock.make(event: CalendarEventMock.birthday()),
             EventEntryMock.make(
                 event: CalendarEventMock.today(
+                    compositeId: "gallery/past",
                     summary: "Past Event",
                     startDate: .now.addingTimeInterval(-3600)
                 )
@@ -41,7 +43,7 @@ struct EventPreviewFixture {
                 )
             ),
             EventEntryMock.make(
-                event: CalendarEventMock.today(summary: "[IMPORTANT] Important Event")
+                event: CalendarEventMock.today(compositeId: "gallery/important", summary: "[IMPORTANT] Important Event")
             ),
             EventEntryMock.make(event: CalendarEventMock.cancelled()),
             EventEntryMock.make(event: CalendarEventMock.maybe()),
@@ -50,7 +52,7 @@ struct EventPreviewFixture {
             EventEntryMock.make(event: CalendarEventMock.withConference()),
             EventEntryMock.make(event: CalendarEventMock.allDeclined()),
             EventEntryMock.make(
-                event: CalendarEventMock.today(summary: "[IMPORTANT] Urgent Review")
+                event: CalendarEventMock.today(compositeId: "gallery/urgent", summary: "[IMPORTANT] Urgent Review")
             ),
         ]
     }

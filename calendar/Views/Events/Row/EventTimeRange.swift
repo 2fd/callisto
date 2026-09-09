@@ -9,8 +9,10 @@ struct EventTimeRange: View {
   let style: EventRowStyle
 
   var body: some View {
-    Text("\(start) - \(end)")
-      .font(.caption)
+    Text("\(start) – \(end)")
+      .font(.system(size: 11))
+      .lineLimit(1)
+      .fixedSize()
       .strikethrough(style.isStruckThrough)
       .foregroundColor(style.detail)
   }

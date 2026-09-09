@@ -10,9 +10,9 @@ struct PopoverHeader: View {
   var isRefreshing: Bool = false
 
   var body: some View {
-    HStack(spacing: 8) {
-      Text(Date.now.format(f: "MMM yyyy").uppercased())
-        .font(.title3)
+    HStack(spacing: 12) {
+      Text(Date.now.format(f: "MMM yyyy"))
+        .font(.system(size: 15, weight: .semibold))
 
       Spacer()
 
@@ -23,27 +23,32 @@ struct PopoverHeader: View {
           }
         }) {
           Image(systemName: "arrow.counterclockwise")
-            .frame(width: 16)
+            .font(.system(size: 16))
+            .frame(width: 24, height: 28)
+            .contentShape(Rectangle())
         }
         .disabled(isRefreshing)
         .eventHoverEffect()
         .buttonStyle(.plain)
-        .help("Settings")
+        .help("Refresh events")
+        .accessibilityLabel("Refresh events")
       }
 
       if onSettings != nil {
         Button(action: onSettings!) {
           Image(systemName: "gear")
-            .frame(width: 16)
+            .font(.system(size: 16))
+            .frame(width: 24, height: 28)
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .eventHoverEffect()
         .help("Settings")
+        .accessibilityLabel("Settings")
       }
     }
     .padding(.horizontal, 12)
-    .padding(.top, 8)
-    .padding(.bottom, 4)
+    .frame(height: UI.PanelHeaderHeight)
   }
 
 }

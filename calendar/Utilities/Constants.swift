@@ -58,12 +58,16 @@ enum EventSyncMode: Sendable, Equatable {
 }
 
 enum UI {
-    static let Width = CGFloat(280)
+    static let Width = CGFloat(320)
 
-    /// Corner radius AppKit uses for menu bar popovers on macOS 14+.
+    /// Rounded panel outline from the Standard design reference.
     ///
     /// ``MenuBarPanel`` is borderless, so ``PopoverChrome`` draws this itself.
-    static let PanelCornerRadius = CGFloat(10)
+    static let PanelCornerRadius = CGFloat(16)
+    static let PanelHeaderHeight = CGFloat(40)
+    static let PanelFooterHeight = CGFloat(32)
+    static let EventCornerRadius = CGFloat(8)
+    static let EventIndicatorWidth = CGFloat(3)
 
     /// Gap between the bottom of the menu bar and the top of the panel.
     static let PanelGap = CGFloat(6)

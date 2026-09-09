@@ -26,6 +26,11 @@ struct PopoverChrome<Content: View>: View {
         )
       )
       .clipShape(.rect(cornerRadius: UI.PanelCornerRadius))
+      .overlay {
+        RoundedRectangle(cornerRadius: UI.PanelCornerRadius)
+          .strokeBorder(.primary.opacity(0.18), lineWidth: 0.5)
+          .allowsHitTesting(false)
+      }
   }
 
   private static var isPreview: Bool {

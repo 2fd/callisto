@@ -45,7 +45,7 @@ struct EventRowStyleTests {
 
     @Test func stripesAreOnlyForFilledRows() {
         // A tentative meeting already underway is drawn as ongoing, and the
-        // shimmer replaces the stripes rather than stacking with them.
+        // active tint replaces the stripes rather than stacking with them.
         let underway = CalendarEventMock.ongoingMeeting(
             status: EventStatus.tentative
         )
@@ -108,34 +108,33 @@ struct EventRowStyleTests {
     @Test func pastEventsAreFadedContentAndFill() {
         let past = style(CalendarEventMock.yesterday())
         #expect(past.contentOpacity == 0.4)
-        #expect(past.fillOpacity(isHovering: false) == 0.4)
-        #expect(past.fillOpacity(isHovering: true) == 0.85 * 0.4)
         #expect(!past.showsAccessories)
     }
 
     @Test func upcomingEventsAreFullStrength() {
         let upcoming = style(CalendarEventMock.today())
         #expect(upcoming.contentOpacity == 1.0)
-        #expect(upcoming.fillOpacity(isHovering: false) == 1.0)
-        #expect(upcoming.fillOpacity(isHovering: true) == 0.85)
         #expect(upcoming.showsAccessories)
     }
 
     // MARK: - Colors
 
-    @Test func borderedRowsDrawTheirTextInTheEventColor() {
-        let bordered = style(CalendarEventMock.cancelled())
-        #expect(bordered.title == bordered.tint)
-        #expect(bordered.detail == bordered.tint)
-        #expect(bordered.titleWeight == .light)
+    @Test func rowsUseSystemLabelsOnNeutralSurfaces() {
+        for event in [CalendarEventMock.cancelled(), CalendarEventMock.today(), CalendarEventMock.outOfOffice()] {
+            let row = style(event)
+            #expect(row.title == Color(nsColor: .labelColor))
+            #expect(row.detail == Color(nsColor: .secondaryLabelColor))
+            #expect(row.titleWeight == .regular)
+        }
     }
 
-    @Test func filledRowsDrawTheirTextOnTheEventColor() {
-        let filled = style(CalendarEventMock.today())
-        #expect(filled.title == filled.onTint)
-        #expect(filled.detail == filled.onTint.opacity(0.85))
-        #expect(filled.title != filled.tint)
-        #expect(filled.titleWeight == .medium)
+    @Test func ongoingMeetingsHaveStrongerTitles() {
+        #expect(style(CalendarEventMock.ongoingMeeting()).titleWeight == .medium)
+    }
+
+    @Test func onlyTimeOffGetsTheRedSurface() {
+        #expect(style(CalendarEventMock.outOfOffice()).isOutOfOffice)
+        #expect(!style(CalendarEventMock.today()).isOutOfOffice)
     }
 
     @Test func theSameEventIsTonedDownOnADarkSurface() {

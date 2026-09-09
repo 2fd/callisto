@@ -21,7 +21,13 @@ struct Popover: View {
                     await eventManager.sync()
                 }
             },
-            isRefreshing: eventManager.isSyncing
+            isRefreshing: eventManager.isSyncing,
+            onMoreEvents: {
+                guard let account = accountManager.iter().first(where: \.canRead),
+                      let url = URL(string: "https://calendar.google.com/calendar/r") else { return }
+                NSWorkspace.shared.open(url.settingAuthUser(account.authuser))
+                dismissMenuBarPanel()
+            }
         )
     }
 }
@@ -37,6 +43,7 @@ struct PopoverContent: View {
     let onSettings: () -> Void
     let onRefresh: () -> Void
     let isRefreshing: Bool
+    var onMoreEvents: (() -> Void)? = nil
 
     var body: some View {
         PopoverChrome {
@@ -48,12 +55,17 @@ struct PopoverContent: View {
                 )
 
                 Divider()
-                    .padding(.horizontal, 6)
+                    .padding(.horizontal, 12)
 
                 if !hasReadableAccounts {
                     NoAccountsView(onManageAccount: onSettings)
                 } else {
-                    EventListView(days: days, maxHeight: maxHeight)
+                    EventListView(
+                        days: days,
+                        maxHeight: max(0, maxHeight - UI.PanelHeaderHeight - UI.PanelFooterHeight - 2)
+                    )
+                    Divider().padding(.horizontal, 12)
+                    PopoverFooter(onMoreEvents: onMoreEvents ?? {})
                 }
             }
             .frame(width: UI.Width)

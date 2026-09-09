@@ -180,3 +180,19 @@ The system uses a single **dark** theme with accessible contrast and warm accent
 - Dark mode is the only expressive surface (deep navy `night`).
 - `primary` (`#FFB08A`) is the single warm accent used sparingly for focus and action.
 - All text meets WCAG 2.1 AA contrast against the dark background.
+
+## Native app previews
+
+App previews follow the supplied macOS calendar guide's Standard variant: a
+320pt panel with 16pt corners, 40pt header, and 32pt “More events…” footer.
+Inside the panel, use the native system font, 15pt semibold month title, 11pt
+semibold day headings, 13pt regular event titles, and 11pt secondary times.
+Rows use 6pt vertical / 12pt horizontal padding, 8pt corners, 4pt gaps, and a
+3pt calendar-color rail. The list has symmetric 12pt insets.
+
+Ordinary rows sit on a subtle neutral surface. Out-of-office rows use a muted
+red fill; ongoing meetings have a light calendar tint and medium title.
+Unanswered/declined/cancelled rows retain an outline; declined/cancelled titles
+are struck through and tentative events retain a faint stripe pattern.
+The app uses adaptive system label colors; web previews show the dark surface.
+The marketing page keeps its warm Callisto palette outside these app previews.
