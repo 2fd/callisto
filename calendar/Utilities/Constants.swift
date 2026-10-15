@@ -82,6 +82,12 @@ enum UI {
     static let MenuBarMaxWidth = CGFloat(280)
 }
 
+/// Public pages on the Callisto website.
+enum Links {
+    static let privacyPolicy = URL(string: "https://callisto.frami.dev/privacy/")!
+    static let termsOfService = URL(string: "https://callisto.frami.dev/terms/")!
+}
+
 /// UserDefaults keys, centralized to prevent typos.
 enum DefaultsKey {
     static let refreshIntervalMinutes = "refreshIntervalMinutes"
