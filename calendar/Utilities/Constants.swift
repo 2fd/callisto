@@ -33,6 +33,22 @@ enum Constants {
     /// Overlap subtracted from the incremental cursor, absorbing clock skew
     /// between Google's `updated` stamps and ours.
     static let deltaSyncOverlap: TimeInterval = 5 * 60
+
+    /// How long before an event starts the user is warned, when another event
+    /// is already in progress and they need the time to wrap it up.
+    static let meetingHeadsUpLead: TimeInterval = 5 * 60
+
+    /// How long after its moment an alert may still be raised. Absorbs a late
+    /// minute tick or a Mac waking from sleep, without ever showing a stale one.
+    static let meetingAlertGrace: TimeInterval = 2 * 60
+
+    /// How long a raised alert is remembered after its start, so it is never
+    /// raised twice.
+    static let meetingAlertRetention: TimeInterval = 24 * 60 * 60
+
+    /// System Settings pane for one app's notifications; append the bundle id.
+    static let notificationSettingsURLPrefix =
+        "x-apple.systempreferences:com.apple.Notifications-Settings.extension?id="
 }
 
 /// How a calendar's events should be fetched this cycle.
@@ -88,6 +104,7 @@ enum DefaultsKey {
     static let showDaysAhead = "showDaysAhead"
     static let showDeclinedEvents = "showDeclinedEvents"
     static let showEmptyDays = "showEmptyDays"
+    static let meetingAlertStyle = "meetingAlertStyle"
 }
 
 /// Google Calendar event status values returned by the API.

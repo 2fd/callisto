@@ -74,6 +74,8 @@ struct SettingsWindow: View {
           }
         }
 
+        MeetingAlertSettingsSection()
+
         if !accountManager.isEmpty {
           ForEach(accountManager.iter(), id: \.accountId) { account in
             Section(account.email) {

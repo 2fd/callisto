@@ -63,8 +63,25 @@ final class MenuBarPanel: NSPanel {
     super.setFrame(rect, display: flag)
   }
 
-  /// Escape closes the panel, matching every other menu bar surface.
+  /// Takes key focus on the mouse-down that lands on a panel shown without it.
+  ///
+  /// The alert panel is ordered front without becoming key, so AppKit would
+  /// otherwise spend the user's first click only making it key, and the click
+  /// would never reach the row or button under the cursor. The popover is
+  /// always key while it is visible, so this does not change it.
+  override func sendEvent(_ event: NSEvent) {
+    let isMouseDown = [.leftMouseDown, .rightMouseDown, .otherMouseDown].contains(event.type)
+    if isMouseDown, !isKeyWindow {
+      makeKey()
+    }
+    super.sendEvent(event)
+  }
+
+  /// What Escape does. Closes the panel by default, matching every other menu
+  /// bar surface; the alert panel only puts the alert away.
+  var onCancel: () -> Void = { dismissMenuBarPanel() }
+
   override func cancelOperation(_ sender: Any?) {
-    dismissMenuBarPanel()
+    onCancel()
   }
 }

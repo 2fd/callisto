@@ -109,6 +109,42 @@ final class GoogleCalendarEventManager {
     return result
   }
 
+  /// Entries for every event that overlaps `interval`, on visible, readable
+  /// calendars, ordered by `startDate`.
+  ///
+  /// Unlike ``iter(_:)`` this ignores the display settings (days ahead,
+  /// declined events): meeting alerts must not change with what the popover
+  /// shows, and a multi-day event started last week is still in progress.
+  func entries(overlapping interval: DateInterval) -> [EventEntry] {
+    _ = version
+
+    let accountsById = Dictionary(
+      uniqueKeysWithValues: accounts.iter().map { ($0.accountId, $0) }
+    )
+    let calendarsById = Dictionary(
+      uniqueKeysWithValues: calendars.iter().map { ($0.calendarId, $0) }
+    )
+
+    return events.compactMap { event in
+      guard event.startDate < interval.end,
+        event.endDate > interval.start,
+        event.status != EventStatus.cancelled,
+        let calendar = calendarsById[event.calendarId],
+        calendar.isVisible,
+        calendar.accountId == event.accountId,
+        let account = accountsById[event.accountId],
+        account.isVisible,
+        account.canRead
+      else { return nil }
+      return EventEntry(
+        event: event,
+        calendar: calendar,
+        account: account,
+        color: calendars.color(for: event, in: calendar)
+      )
+    }
+  }
+
   /// Returns ``EventDay`` entries grouped by day. When `settings.showEmptyDays`
   /// is on, emits a placeholder entry for every day in the window with no events.
   func iterByDays(_ settings: UserSettings) -> [EventDay] {

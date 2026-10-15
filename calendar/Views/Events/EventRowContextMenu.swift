@@ -56,7 +56,7 @@ struct EventRowContextMenu: View {
       Button("Open meeting") {
         guard let url = entry.meetingURL else { return }
         NSWorkspace.shared.open(url)
-        dismissMenuBarPanel()
+        dismissMenuBarPanel(actingOn: entry.event)
       }
     }
     Button("Open in Calendar") {
