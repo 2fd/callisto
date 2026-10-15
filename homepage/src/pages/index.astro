@@ -7,6 +7,7 @@ import DownloadButton from "@/components/marketing/DownloadButton.astro";
 import FeatureSection from "@/components/marketing/FeatureSection.astro";
 import SectionCopy from "@/components/marketing/SectionCopy.astro";
 import JoinCallPreview from "@/components/marketing/JoinCallPreview.astro";
+import MeetingAlertPreview from "@/components/marketing/MeetingAlertPreview.astro";
 import ConferenceKindPreview from "@/components/marketing/ConferenceKindPreview.astro";
 import QuickActionsPreview from "@/components/marketing/QuickActionsPreview.astro";
 import AccountLinksPreview from "@/components/marketing/AccountLinksPreview.astro";
@@ -88,10 +89,24 @@ import jupiterVideo from "@/assets/jupiter.mp4";
       <JoinCallPreview slot="visual" />
     </FeatureSection>
 
-    <!-- Zoom vs Meet -->
+    <!-- Meeting alerts -->
     <FeatureSection
       surface="muted"
-      gradientClass="inset-y-0 right-0 w-1/2 bg-[radial-gradient(circle_at_52%_50%,rgba(255,176,138,0.08),transparent_42%)]"
+      gradientClass="inset-y-0 right-0 w-1/2 bg-[radial-gradient(circle_at_52%_45%,rgba(255,176,138,0.08),transparent_42%)]"
+    >
+      <SectionCopy
+        slot="copy"
+        eyebrow="Meeting alerts"
+        heading="A heads-up that<br />doesn’t interrupt"
+        description="When an event is about to start, a quiet card drops from the menu bar without taking focus from what you’re typing. Already in a call? It warns you five minutes early, so you can wrap up. Click the event to join, or dismiss it."
+      />
+
+      <MeetingAlertPreview slot="visual" />
+    </FeatureSection>
+
+    <!-- Zoom vs Meet -->
+    <FeatureSection
+      gradientClass="inset-0 bg-[radial-gradient(circle_at_78%_50%,rgba(255,176,138,0.08),transparent_32%)]"
     >
       <SectionCopy
         slot="copy"
@@ -106,7 +121,8 @@ import jupiterVideo from "@/assets/jupiter.mp4";
     <!-- Right-click quick actions -->
     <FeatureSection
       id="design"
-      gradientClass="inset-0 bg-[radial-gradient(circle_at_70%_45%,rgba(43,43,61,0.32),transparent_35%)]"
+      surface="muted"
+      gradientClass="inset-y-0 right-0 w-1/2 bg-[radial-gradient(circle_at_50%_45%,rgba(43,43,61,0.32),transparent_40%)]"
     >
       <SectionCopy
         slot="copy"
@@ -120,8 +136,7 @@ import jupiterVideo from "@/assets/jupiter.mp4";
 
     <!-- Multiple accounts / authuser -->
     <FeatureSection
-      surface="muted"
-      gradientClass="inset-y-0 right-0 w-1/2 bg-[radial-gradient(circle_at_50%_45%,rgba(255,176,138,0.07),transparent_40%)]"
+      gradientClass="inset-0 bg-[radial-gradient(circle_at_75%_45%,rgba(255,176,138,0.07),transparent_32%)]"
     >
       <SectionCopy
         slot="copy"
@@ -135,7 +150,8 @@ import jupiterVideo from "@/assets/jupiter.mp4";
 
     <!-- Days ahead -->
     <FeatureSection
-      gradientClass="inset-0 bg-[radial-gradient(circle_at_78%_50%,rgba(255,176,138,0.07),transparent_32%)]"
+      surface="muted"
+      gradientClass="inset-y-0 right-0 w-1/2 bg-[radial-gradient(circle_at_52%_50%,rgba(255,176,138,0.07),transparent_42%)]"
     >
       <SectionCopy
         slot="copy"

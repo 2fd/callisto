@@ -1,0 +1,26 @@
+---
+/**
+ * Mirrors MeetingAlertHeader: an uppercase section label on the left and the
+ * live countdown, in the section's tone, on the right.
+ */
+const tones = {
+  // The app's `.accentColor` and `.orange` on a dark surface.
+  accent: "#0a84ff",
+  warning: "#ff9f0a",
+} as const;
+
+type Tone = keyof typeof tones;
+
+interface Props {
+  title: string;
+  detail: string;
+  tone: Tone;
+}
+const { title, detail, tone } = Astro.props;
+---
+
+<div class="flex items-baseline px-1 pt-1 pb-0.5 text-[11px] leading-[13px]">
+  <span class="font-semibold text-[#ababab] uppercase">{title}</span>
+  <span class="flex-1"></span>
+  <span class="tabular-nums" style={`color:${tones[tone]}`}>{detail}</span>
+</div>

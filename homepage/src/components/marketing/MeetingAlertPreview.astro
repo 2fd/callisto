@@ -1,0 +1,59 @@
+---
+/**
+ * Mirrors MeetingAlertView's heads-up: the event the user is in, the one
+ * coming up, and Dismiss. Rows are the same AppEventRow the panel previews
+ * use, because the app draws them with the unchanged EventRow.
+ */
+import { Keyboard } from "@lucide/astro";
+import AppAlertHeader from "@/components/marketing/AppAlertHeader.astro";
+import AppEventRow from "@/components/marketing/AppEventRow.astro";
+import { eventPalette } from "@/lib/calendarRow";
+---
+
+<div class="flex w-full justify-start md:justify-end">
+  <div class="relative w-[320px] max-w-full pb-10">
+    <div
+      class="alert-panel flex w-[320px] max-w-full flex-col gap-1 overflow-hidden rounded-[16px] bg-[#1c1c1c]/95 p-3 text-[#f2f2f2] shadow-elevation-3 ring-1 ring-white/20 backdrop-blur-2xl"
+    >
+      <AppAlertHeader title="Now" detail="ends in 5 min" tone="warning" />
+      <AppEventRow
+        title="Sprint planning"
+        time="10:00 - 10:30"
+        treatment="ongoing"
+        conference="zoom"
+      />
+
+      <AppAlertHeader title="Up next" detail="starts in 4:32" tone="accent" />
+      <AppEventRow
+        title="Design review"
+        time="10:30 - 11:00"
+        color={eventPalette.sage}
+        conference="meet"
+      />
+
+      <span
+        class="mt-2 flex h-7 items-center justify-center rounded-[6px] bg-white/[0.12] text-[13px] text-[#f2f2f2] ring-[0.5px] ring-white/15"
+      >
+        Dismiss
+      </span>
+    </div>
+
+    {
+      /* Below the panel rather than over it: the point is what the alert
+        leaves alone. */
+    }
+    <span
+      class="absolute bottom-0 left-4 inline-flex items-center gap-1.5 rounded-xs bg-primary px-2 py-1 text-[0.7rem] font-semibold whitespace-nowrap text-primary-foreground shadow-elevation-2"
+    >
+      <Keyboard class="size-3.5" />
+      Your focus stays where it was
+    </span>
+  </div>
+</div>
+
+<style>
+  .alert-panel {
+    font-family:
+      -apple-system, BlinkMacSystemFont, "Inter Variable", sans-serif;
+  }
+</style>
