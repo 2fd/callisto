@@ -1,5 +1,6 @@
 ---
 import LegalLayout from "@/layouts/LegalLayout.astro";
+import { GITHUB_ISSUES_URL } from "@/lib/constants";
 
 const updated = "June 1, 2026";
 ---
@@ -109,6 +110,6 @@ const updated = "June 1, 2026";
   <h2>Contact</h2>
   <p>
     For questions about these terms, contact the Callisto maintainers through
-    <a href="https://github.com/2fd/callisto/issues">GitHub Issues</a>.
+    <a href={GITHUB_ISSUES_URL}>GitHub Issues</a>.
   </p>
 </LegalLayout>

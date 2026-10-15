@@ -20,6 +20,9 @@ struct NoAccountsView: View {
                     .controlSize(.regular)
                     .eventHoverEffect()
                 }
+
+                Link("Privacy Policy", destination: Links.privacyPolicy)
+                    .font(.caption)
             }
             .frame(maxWidth: .infinity, minHeight: 600)
         .padding()

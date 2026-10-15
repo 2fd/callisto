@@ -95,6 +95,8 @@ struct SettingsWindow: View {
         }
         
         AccountAdd()
+
+        LegalLinksSection()
       }
       .formStyle(.grouped)
     }
