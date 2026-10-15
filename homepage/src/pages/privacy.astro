@@ -1,155 +1,300 @@
 ---
 import LegalLayout from "@/layouts/LegalLayout.astro";
+import {
+  CONTACT_EMAIL,
+  DEVELOPER_NAME,
+  GITHUB_ISSUES_URL,
+  SITE_URL,
+} from "@/lib/constants";
 
-const updated = "June 1, 2026";
+const updated = "October 14, 2026";
 ---
 
 <LegalLayout
   title="Privacy Policy"
   eyebrow="Privacy"
   updated={updated}
-  description="Callisto is a menu bar app for macOS that shows and manages your meetings from Google Calendar. This policy explains what the app accesses, where data is stored, and how it is used."
+  description="How Callisto, a macOS menu bar app for Google Calendar meetings, accesses, uses, stores, shares, protects, and deletes your Google user data."
 >
-  <h2>Overview</h2>
+  <h2>Who We Are</h2>
   <p>
-    Callisto is designed as a local-first macOS app. It does not require a
-    Callisto account, and the app does not operate a separate backend service
-    for your calendar data. Calendar access is requested through Google OAuth so
-    the app can show your upcoming meetings and let you manage meeting-related
-    calendar actions from the menu bar.
+    This Privacy Policy applies to Callisto, a menu bar app for macOS that shows
+    and manages your meetings from Google Calendar, and to the Callisto website
+    at <a href={`${SITE_URL}/`}>callisto.frami.dev</a>. Callisto is developed
+    and maintained by {DEVELOPER_NAME} ("we", "us"). You can contact us about this
+    policy at <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>.
   </p>
 
-  <h2>Information Callisto Accesses</h2>
-  <p>
-    When you connect a Google account, Callisto requests access to your Google
-    profile and Google Calendar data. Depending on the permissions you grant,
-    this may include:
-  </p>
+  <h2>Summary</h2>
   <ul>
-    <li>Your Google account identifier, email address, and display name.</li>
     <li>
-      Your calendar list, calendar names, colors, time zones, and calendar
-      visibility metadata.
+      Callisto runs entirely on your Mac. We do not operate servers that
+      receive, store, or process your Google user data, and we never see it.
     </li>
     <li>
-      Calendar events for the local sync window, including titles, descriptions,
-      times, locations, attendees, reminders, attachments metadata, recurrence
-      data, conference links, organizer details, RSVP status, and event links.
+      Callisto reads your Google Calendar data only to show your meetings in the
+      menu bar, and changes events only when you ask it to.
     </li>
     <li>
-      Event changes you explicitly make in Callisto, such as RSVP updates, event
-      deletion, or removing an event from your own calendar view.
+      Your Google user data is not sold, not used for advertising, not shared
+      with third parties, and not used to train AI or machine learning models.
+    </li>
+    <li>
+      You can delete all of it at any time by removing the account in Callisto
+      and revoking access in your Google Account.
     </li>
   </ul>
 
-  <h2>Google OAuth Scopes</h2>
-  <p>Callisto currently requests these Google OAuth scopes:</p>
+  <h2>Google User Data Callisto Accesses</h2>
+  <p>
+    When you connect a Google account, Callisto asks Google for the permissions
+    (OAuth scopes) listed below. Google lets you grant or decline each one on
+    the consent screen. Callisto accesses only the data covered by the
+    permissions you grant.
+  </p>
   <ul>
     <li>
-      <code>https://www.googleapis.com/auth/calendar.calendarlist.readonly</code
-      >, used to read the list of calendars you are subscribed to, along with
-      their names, colors, and time zones.
+      <strong>Basic profile</strong> (<code
+        >https://www.googleapis.com/auth/userinfo.email</code
+      >, <code>https://www.googleapis.com/auth/userinfo.profile</code>): your
+      Google account ID, email address, and display name.
     </li>
     <li>
-      <code>https://www.googleapis.com/auth/calendar.events.readonly</code>,
-      used to read the upcoming events on those calendars.
+      <strong>Calendar list</strong> (<code
+        >https://www.googleapis.com/auth/calendar.calendarlist.readonly</code
+      >): the calendars in your Google Calendar list, with their IDs, names,
+      colors, time zones, and your access role on each calendar.
     </li>
     <li>
-      <code>https://www.googleapis.com/auth/calendar.events</code>, used only
-      when you perform event actions such as RSVP updates or deleting/removing
-      events. This permission is optional; if you decline it, Callisto still
-      shows your events and only hides the edit actions.
+      <strong>Calendar events, read</strong> (<code
+        >https://www.googleapis.com/auth/calendar.events.readonly</code
+      >): the events on those calendars from the start of today through about
+      the next 31 days. For each event this includes the title, description,
+      start and end times, time zone, location, status, recurrence rules,
+      organizer, attendees (names, email addresses, and their responses), your
+      own response, reminders, attachment names and links, conference and
+      meeting links (for example Google Meet or Zoom), and the event's Google
+      Calendar link.
     </li>
     <li>
-      <code>https://www.googleapis.com/auth/userinfo.email</code> and <code
-        >https://www.googleapis.com/auth/userinfo.profile</code
-      >, used to identify and label the Google account you connected.
+      <strong>Calendar events, write</strong> (<code
+        >https://www.googleapis.com/auth/calendar.events</code
+      >): optional. Used only when you choose an event action in Callisto. If
+      you decline it, Callisto still shows your events and hides the edit
+      actions.
+    </li>
+  </ul>
+  <p>
+    Callisto does not access your Gmail, Google Drive, contacts, or any other
+    Google service. It does not read the contents of attachments.
+  </p>
+
+  <h2>How Callisto Uses Google User Data</h2>
+  <p>
+    Callisto uses Google user data only to provide the features you see in the
+    app:
+  </p>
+  <ul>
+    <li>
+      Your profile data identifies and labels each connected account in the
+      Settings window, and lets you connect more than one account.
+    </li>
+    <li>
+      Your calendar list lets you choose which calendars to show, and gives each
+      event its calendar's color.
+    </li>
+    <li>
+      Your events are shown as a list of upcoming meetings in the menu bar, with
+      the next meeting in the menu bar title. Meeting links let you join a call
+      with one click. Attendee responses show who is coming.
+    </li>
+    <li>
+      With the optional write permission, Callisto changes an event only when
+      you choose an action:
+      <ul>
+        <li>RSVP: sets your response to Accept, Maybe, or Decline.</li>
+        <li>
+          Delete or remove: deletes the event, or a single occurrence of a
+          repeating event. For "this and following events", Callisto ends the
+          series before the chosen occurrence by updating its recurrence rule.
+        </li>
+      </ul>
+      These actions use Google's normal notification setting, so Google may email
+      the organizer and other attendees about the change, as Google Calendar itself
+      does.
+    </li>
+  </ul>
+  <p>
+    Callisto never creates events, and never changes events without an action
+    from you. We do not use Google user data for advertising, for credit or
+    lending decisions, to build user profiles or databases, or for any purpose
+    that is not part of the features above. No person reads your data. Callisto
+    has no servers, so we cannot access it.
+  </p>
+
+  <h2>AI and Machine Learning</h2>
+  <p>
+    Callisto does not use Google user data, or any data obtained through Google
+    Workspace APIs, to develop, improve, or train generalized or
+    non-personalized artificial intelligence or machine learning models.
+    Callisto does not transfer Google user data to any third-party AI tool or
+    model.
+  </p>
+
+  <h2>Limited Use</h2>
+  <p>
+    Callisto's use and transfer to any other app of information received from
+    Google APIs will adhere to the
+    <a href="https://developers.google.com/terms/api-services-user-data-policy"
+      >Google API Services User Data Policy</a
+    >, including the Limited Use requirements.
+  </p>
+
+  <h2>How Google User Data Is Stored</h2>
+  <p>All Google user data stays on your Mac:</p>
+  <ul>
+    <li>
+      OAuth access and refresh tokens are stored only in the macOS Keychain.
+    </li>
+    <li>
+      Account, calendar, and event data are stored in Callisto's local database
+      (SwiftData) in your user account's app container on your Mac.
+    </li>
+    <li>
+      Your choices about which accounts and calendars to show are stored in the
+      same local database. Settings such as sync interval and days to show are
+      stored in the app's local preferences (UserDefaults).
+    </li>
+  </ul>
+  <p>
+    Callisto has no backend. Your Google user data is never uploaded to us or to
+    any server other than Google's.
+  </p>
+
+  <h2>Sharing, Transfer, and Disclosure</h2>
+  <p>
+    Callisto sends requests directly from your Mac to Google's servers to sign
+    you in, refresh your access, read calendars and events, and apply the
+    changes you choose. That is the only place your Google user data goes.
+  </p>
+  <p>
+    We do not sell, rent, share, transfer, or disclose Google user data to
+    anyone, including advertisers, data brokers, information resellers, or
+    analytics providers. We would disclose data only if the law required it, but
+    because we never receive or hold your Google user data, we have none to
+    disclose.
+  </p>
+
+  <h2>Data Protection</h2>
+  <ul>
+    <li>
+      All traffic between Callisto and Google uses HTTPS (TLS). Sign-in uses
+      Google's OAuth 2.0 flow with PKCE in your default browser, so Callisto
+      never sees your Google password.
+    </li>
+    <li>
+      OAuth tokens are kept in the macOS Keychain, which encrypts them, and are
+      never written to the database, preferences, or logs.
+    </li>
+    <li>
+      Local data is protected by macOS user-account isolation and, when enabled,
+      FileVault disk encryption.
+    </li>
+    <li>
+      Callisto asks for the narrowest scopes it needs, and makes write access
+      optional.
+    </li>
+    <li>
+      Diagnostic messages that Callisto writes to the local macOS system log
+      never contain event details or tokens. They can contain Google account and
+      calendar identifiers (a calendar identifier can be an email address). They
+      stay on your Mac and are not sent to us.
     </li>
   </ul>
 
-  <h2>How Callisto Uses Google Data</h2>
+  <h2>Retention and Deletion</h2>
   <p>
-    Callisto uses Google Calendar data to provide the app's visible meeting
-    features: showing your upcoming events in the macOS menu bar, opening
-    meeting links, filtering visible calendars and accounts, syncing event data,
-    and applying meeting actions you choose. Callisto does not use Google user
-    data for advertising, credit decisions, surveillance, or unrelated product
-    features.
+    Callisto keeps Google user data on your Mac only while the account is
+    connected. Each sync replaces the cached data with the current data from
+    Google, so events deleted in Google Calendar are also deleted locally.
   </p>
+  <p>You can delete your data at any time:</p>
+  <ul>
+    <li>
+      <strong>Remove the account in Callisto:</strong> open Settings, find the account,
+      and choose Remove. Callisto immediately deletes that account's OAuth tokens
+      from the Keychain and its profile, calendars, and events from the local database.
+    </li>
+    <li>
+      <strong>Revoke Callisto's access in Google:</strong> go to
+      <a href="https://myaccount.google.com/connections"
+        >Google Account → Third-party apps &amp; services</a
+      >, select Callisto, and remove access. Removing the account in Callisto
+      does not revoke this permission on its own, so do this too if you stop
+      using Callisto.
+    </li>
+    <li>
+      <strong>Uninstall:</strong> quit Callisto, delete it from Applications, and
+      delete its data folder,
+      <code>~/Library/Containers/dev.frami.callisto</code>. Then remove any
+      Callisto items from Keychain Access.
+    </li>
+  </ul>
   <p>
-    Callisto's use and transfer of information received from Google APIs will
-    adhere to the
-    <a href="https://developers.google.com/terms/api-services-user-data-policy">
-      Google API Services User Data Policy
-    </a>, including the Limited Use requirements.
+    Because we hold no copy of your Google user data, there is nothing for us to
+    delete on our side. If you need help deleting your data, email
+    <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a> and we will walk you through
+    it.
   </p>
 
-  <h2>Local Storage</h2>
+  <h2>App Updates</h2>
   <p>
-    OAuth access and refresh tokens are stored only in the macOS Keychain.
-    Account metadata, calendar metadata, event data, attendees, reminders, and
-    attachment metadata are stored locally on your Mac using SwiftData. App
-    preferences, such as sync interval and display options, are stored in
-    UserDefaults.
-  </p>
-
-  <h2>Data Sharing</h2>
-  <p>
-    Callisto sends Google API requests directly from your Mac to Google in order
-    to authenticate, refresh tokens, read calendars and events, and apply event
-    changes you request. Callisto does not sell your personal data and does not
-    transfer your Google Calendar data to advertising platforms, data brokers,
-    or other third parties.
-  </p>
-  <p>
-    The public website is hosted on Cloudflare Workers static assets. Downloads
-    and app update metadata are served through GitHub releases. Those providers
-    may process ordinary connection information, such as IP address, user agent,
-    timestamps, and requested URLs, under their own terms and privacy policies.
+    Callisto checks for updates with the Sparkle framework, which downloads an
+    update feed and update files from GitHub. These requests contain the app
+    version and normal connection data, such as your IP address. They contain no
+    Google user data. GitHub handles them under the
+    <a
+      href="https://docs.github.com/site-policy/privacy-policies/github-general-privacy-statement"
+      >GitHub Privacy Statement</a
+    >.
   </p>
 
   <h2>Analytics and Tracking</h2>
   <p>
-    Callisto does not include in-app advertising SDKs, third-party analytics
-    SDKs, or behavioral tracking code. The website does not set application
-    cookies or include client-side analytics code in this repository.
+    Callisto has no advertising, analytics, crash reporting, or tracking code.
   </p>
 
-  <h2>Security</h2>
+  <h2>This Website</h2>
   <p>
-    Calendar data is transmitted over HTTPS through Google's APIs. OAuth tokens
-    are stored in the macOS Keychain with Data Protection Keychain support and
-    are not stored in SwiftData or UserDefaults. Local app data remains on your
-    Mac unless you choose to use macOS, Google, GitHub, or other system-level
-    services that sync, back up, or process data independently of Callisto.
-  </p>
-
-  <h2>Retention and Deletion</h2>
-  <p>
-    Callisto keeps local account, calendar, event, and settings data while you
-    use the app. Removing a Google account from Callisto deletes that account's
-    OAuth tokens from the macOS Keychain and removes the account, calendars, and
-    events for that account from the local app database. You can also revoke
-    Callisto's Google access from your Google Account permissions page.
+    callisto.frami.dev is a static website hosted on Cloudflare. It sets no
+    cookies of its own and runs no analytics. Cloudflare processes ordinary
+    connection data, such as IP address, user agent, and requested URL, to serve
+    and protect the site, under the
+    <a href="https://www.cloudflare.com/privacypolicy/"
+      >Cloudflare Privacy Policy</a
+    >. Downloads are served from GitHub.
   </p>
 
   <h2>Children</h2>
   <p>
-    Callisto is not directed to children under 13 and should not be used by
-    anyone who is not permitted to grant Google account access under applicable
-    law and Google's terms.
+    Callisto is not directed to children under 13, and we do not knowingly
+    collect data from them.
   </p>
 
-  <h2>Changes</h2>
+  <h2>Changes to This Policy</h2>
   <p>
-    This policy may be updated as Callisto changes. If Callisto materially
-    changes how it accesses, uses, stores, or shares Google user data, the
-    published policy will be updated before that new use is introduced.
+    We will update this page when Callisto changes how it accesses, uses,
+    stores, or shares Google user data, and change the "Last updated" date
+    above. If a change is material, we will publish it here and announce it in
+    the app's release notes before the new use takes effect, and ask for your
+    consent where required.
   </p>
 
   <h2>Contact</h2>
   <p>
-    For privacy questions or requests, contact the Callisto maintainers through
-    <a href="https://github.com/2fd/callisto/issues">GitHub Issues</a>.
+    For privacy questions or data requests, email
+    <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>. You can also open
+    an issue on <a href={GITHUB_ISSUES_URL}>GitHub</a>, but do not post personal
+    data there.
   </p>
 </LegalLayout>

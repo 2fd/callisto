@@ -1,6 +1,7 @@
 ---
 import CallistoLogo from "@/components/brand/CallistoLogo.astro";
 import DownloadButton from "@/components/marketing/DownloadButton.astro";
+import { GITHUB_REPO_URL } from "@/lib/constants";
 
 interface NavItem {
   label: string;
@@ -17,7 +18,7 @@ interface Props {
 const {
   navItems = [
     { label: "Features", href: "#features", active: false },
-    { label: "Github", href: "https://github.com/2fd/callisto", active: false },
+    { label: "Github", href: GITHUB_REPO_URL, active: false },
   ],
   showCta = true,
   class: className,

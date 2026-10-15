@@ -1,5 +1,6 @@
 ---
 import Button from "@/components/ui/Button.astro";
+import { DOWNLOAD_URL } from "@/lib/constants";
 
 interface Props {
   size?:
@@ -10,13 +11,10 @@ interface Props {
 }
 
 const { size = "lg", class: className, variant = "default" } = Astro.props;
-
-const downloadUrl =
-  "https://github.com/2fd/callisto/releases/latest/download/Callisto.dmg";
 ---
 
 <Button
-  href={downloadUrl}
+  href={DOWNLOAD_URL}
   size={size}
   class={className}
   variant={variant}
