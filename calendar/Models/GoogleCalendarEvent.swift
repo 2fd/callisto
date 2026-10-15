@@ -153,6 +153,19 @@ final class GoogleCalendarEvent {
   }
   var isRecurring: Bool { recurringEventId != nil }
 
+  /// Whether the user should be alerted when this event is about to start: any
+  /// timed event they have not turned down, with or without a meeting link.
+  /// A working-location block is a marker, not something the user attends.
+  var isAlertable: Bool {
+    !isAllDay && !isWorkingLocation && !isDeclined && !isCancelled
+      && status != EventStatus.cancelled
+  }
+
+  /// Whether `now` falls inside the event's hours.
+  func isUnderway(at now: Date) -> Bool {
+    startDate <= now && endDate > now
+  }
+
   var isAccepted: Bool {
     selfResponseStatus != nil
       ? selfResponseStatus == EventStatus.accepted

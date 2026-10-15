@@ -10,6 +10,9 @@ protocol SettingsStore {
     func integer(forKey key: String) -> Int
     func bool(forKey key: String) -> Bool
     func set(_ value: Any?, forKey key: String)
+    /// The raw stored value, or `nil` when the key was never set — the only way
+    /// to tell "unset" from an explicit `0` or `false`.
+    func object(forKey key: String) -> Any?
 }
 
 extension UserDefaults: SettingsStore {}
@@ -23,6 +26,7 @@ final class InMemorySettingsStore: SettingsStore {
     func integer(forKey key: String) -> Int { storage[key] as? Int ?? 0 }
     func bool(forKey key: String) -> Bool { storage[key] as? Bool ?? false }
     func set(_ value: Any?, forKey key: String) { storage[key] = value }
+    func object(forKey key: String) -> Any? { storage[key] }
 }
 
 // MARK: - UserSettings
@@ -108,11 +112,51 @@ final class UserSettings {
         }
     }
 
+    /// How the user is told an event is about to start.
+    ///
+    /// Defaults to ``MeetingAlertStyle/notification``. Stored as its raw value;
+    /// an unset or unknown value falls back to the default.
+    var meetingAlertStyle: MeetingAlertStyle {
+        get {
+            access(keyPath: \.meetingAlertStyle)
+            guard let raw = store.object(forKey: DefaultsKey.meetingAlertStyle) as? Int,
+                  let style = MeetingAlertStyle(rawValue: raw)
+            else { return .notification }
+            return style
+        }
+        set {
+            withMutation(keyPath: \.meetingAlertStyle) {
+                store.set(newValue.rawValue, forKey: DefaultsKey.meetingAlertStyle)
+            }
+        }
+    }
+
     /// Reads an `Int` from the store, substituting `defaultValue` when the
     /// stored value is missing or non-positive (UserDefaults returns `0` for
     /// unset keys, which is indistinguishable from an explicit zero).
     private func positiveInt(forKey key: String, default defaultValue: Int) -> Int {
         let value = store.integer(forKey: key)
         return value > 0 ? value : defaultValue
+    }
+}
+
+// MARK: - MeetingAlertStyle
+
+/// How an event about to start is announced. One style at a time.
+enum MeetingAlertStyle: Int, CaseIterable, Identifiable {
+    case off = 0
+    /// A native notification in Notification Center.
+    case notification = 1
+    /// The alert panel, hung under the status item without taking focus.
+    case popup = 2
+
+    var id: Int { rawValue }
+
+    var label: LocalizedStringKey {
+        switch self {
+        case .off: "Off"
+        case .notification: "Notification"
+        case .popup: "Menu bar popup"
+        }
     }
 }

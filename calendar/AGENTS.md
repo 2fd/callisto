@@ -34,12 +34,13 @@ calendar/
 ├── Services/
 │   ├── Auth/                  # AuthConfig, PKCEHelper, AuthorizationSession
 │   ├── Keychain/              # KeychainService, OAuthTokens, KeychainError
-│   └── Google/                # The three managers + GoogleCalendarAPI + APIError
+│   ├── Google/                # The three managers + GoogleCalendarAPI + APIError
+│   └── MeetingAlerts/         # When to alert (policy, tracker, scheduler) + MeetingNotifier
 ├── Views/
-│   ├── MenuBar/               # Status item, panel, chrome, label, right-click menu
+│   ├── MenuBar/               # Status item, panels, chrome, label, alert, right-click menu
 │   ├── Events/                # Event list, rows, context menu, preview fixtures
 │   ├── Accounts/              # NoAccountsView
-│   └── Settings/              # Settings window, updates section
+│   └── Settings/              # Settings window, updates and alerts sections
 └── Utilities/                 # Schedulers, extensions, Logger, Constants, AppInfo
 ```
 
@@ -222,6 +223,48 @@ vanish from the canvas. `MenuBarPreviewStage` (DEBUG) puts previews on a stand-i
 the material has something to blend with, and `MenuBarLabel`'s previews render the label on
 a menu bar strip next to a template-flattened copy — if the two rows ever match, the label
 has regressed to template rendering.
+
+## Meeting alerts
+
+The user is told when an event is about to start, in one style at a time chosen in Settings
+(`UserSettings.meetingAlertStyle`: off, native notification — the default — or menu bar popup).
+
+- **What alerts**: any timed event the user has not declined (`GoogleCalendarEvent.isAlertable`),
+  with or without a meeting link. All-day, working-location, declined and cancelled events never
+  alert, and never count as the event the user is in.
+- **When**: at the start. While another alertable event is underway, also
+  `Constants.meetingHeadsUpLead` (5 min) early. Each moment stays due for
+  `Constants.meetingAlertGrace`, so a late tick or a wake from sleep still raises it.
+- **Pieces** (`Services/MeetingAlerts/`): `MeetingAlertPolicy` decides what is due (pure,
+  takes `now`); `MeetingAlertTracker` remembers what was raised and what is still showing
+  (value type); `MeetingAlertScheduler` re-evaluates on every `MinuteScheduler` tick, sync and
+  style change and hands a `MeetingAlertChange` to `AppDelegate`, which drives the outputs.
+  The scheduler reads `GoogleCalendarEventManager.entries(overlapping:)`, not `iter(_:)`: what
+  alerts must not depend on what the popover is set to show.
+- **Raised alerts are remembered in memory only.** `MeetingNotifier.register()` clears
+  delivered notifications at launch, since nothing else would ever withdraw them.
+- **Using an alert is tapping its event**. The popup draws each event with the unmodified
+  `EventRow`, so a tap does what it does in the popover: `EventEntry.open()` joins the meeting,
+  or opens the event in Google Calendar. A notification click does the same; only an event
+  that has started offers a Join button.
+- **The popup is its own `MenuBarPanel`** (`MenuBarController.presentAlert()`), ordered front
+  without activating the app, so it never steals focus. It has no implicit close and no
+  snooze. It goes when:
+  - the user uses one of its events — joining or opening it, from the alert, the popover, a
+    row's context menu or a notification. `dismissMenuBarPanel(actingOn:)` carries the event's
+    `compositeId`, and `MenuBarController.dismissAll(actingOn:)` puts the alert away only when
+    announces that event; Settings, More events or another event's link leave it alone, and
+    so does the event in progress a heads-up shows under "Now", which is context;
+  - the user dismisses it — the Dismiss button or Escape on it, both
+    `dismissMeetingAlert()` — or clicks the status item, which swaps it for the popover;
+  - its event ends, moves or is declined, or the style changes.
+
+  Every active alert is listed, starting ones and heads-ups in their own sections, and a
+  heads-up re-resolves the event in progress on every tick. An alert that arrives while the
+  popover is open waits for it to close. `MenuBarPanel.sendEvent` makes the panel key on the
+  first click, so that click reaches the row or button under it.
+- **The unit tests run inside the app** (`TEST_HOST`), so `AppDelegate` skips notification
+  registration and the alert scheduler under XCTest.
 
 ## Conventions
 

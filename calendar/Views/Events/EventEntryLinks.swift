@@ -8,7 +8,7 @@ extension EventEntry {
   func open() {
     if let meetURL = event.conferenceMeetURL(authuser: account.authuser) {
       NSWorkspace.shared.open(meetURL)
-      dismissMenuBarPanel()
+      dismissMenuBarPanel(actingOn: event)
     } else {
       openInCalendar()
     }
@@ -18,7 +18,7 @@ extension EventEntry {
   func openInCalendar() {
     guard let url = event.calendarURL(authuser: account.authuser) else { return }
     NSWorkspace.shared.open(url)
-    dismissMenuBarPanel()
+    dismissMenuBarPanel(actingOn: event)
   }
 
   /// The event's meeting URL, or `nil` when it has no conference link.

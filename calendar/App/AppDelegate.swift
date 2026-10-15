@@ -31,6 +31,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
   private var menuBar: MenuBarController!
   private var settingsWindow: SettingsWindowController!
 
+  private var meetingAlerts: MeetingAlertScheduler!
+  private var meetingNotifier: MeetingNotifier!
+  private let meetingAlertModel = MeetingAlertModel()
+
   func applicationDidFinishLaunching(_ notification: Notification) {
     // Redundant with LSUIElement, but makes the policy explicit and survives a
     // plist edit.
@@ -56,11 +60,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     eventManager = GoogleCalendarEventManager(container: container)
     appUpdater = AppUpdater()
 
+    // Registered before launch finishes, so a click on the notification that
+    // launched the app still reaches its delegate.
+    meetingNotifier = MeetingNotifier { [unowned self] compositeId in
+      let around = DateInterval(start: .now.addingTimeInterval(-86_400), duration: 2 * 86_400)
+      return eventManager.entries(overlapping: around).first { $0.event.compositeId == compositeId }
+    }
+    if !Self.isHostingTests {
+      meetingNotifier.register()
+    }
+
     settingsWindow = SettingsWindowController(rootView: inject(SettingsWindow()))
 
     menuBar = MenuBarController(
       label: inject(MenuBarStatusLabel()),
       content: inject(Popover()),
+      alert: inject(MeetingAlertPanel(model: meetingAlertModel)),
       contextMenu: { [unowned self] in
         makeMenuBarContextMenu(
           eventManager: eventManager,
@@ -70,14 +85,34 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
       }
     )
 
+    meetingAlerts = MeetingAlertScheduler(
+      eventManager: eventManager,
+      settings: userSettings,
+      ticker: minuteTicker,
+      onChange: { [unowned self] change in apply(change) }
+    )
+    menuBar.onAlertDismissed = { [unowned self] in meetingAlerts.dismissActive() }
+
     minuteTicker.start()
     startScheduler()
     observeRefreshInterval()
+    // The unit tests run inside this app; they must not ask for notification
+    // permission or raise alerts for the developer's real calendar.
+    if !Self.isHostingTests {
+      // Ask for permission before the first evaluation can post anything.
+      observeAlertStyle()
+      meetingAlerts.start()
+    }
+  }
+
+  private static var isHostingTests: Bool {
+    ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
   }
 
   func applicationWillTerminate(_ notification: Notification) {
     syncScheduler.stop()
     minuteTicker.stop()
+    meetingAlerts.stop()
   }
 
   /// Receives the OAuth redirect.
@@ -115,6 +150,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         .environment(userSettings)
         .environment(minuteTicker)
         .environment(appUpdater)
+        .environment(meetingNotifier)
         .environment(
           \.openWindows,
           OpenWindowsAction { [unowned self] window in
@@ -153,6 +189,50 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         self?.startScheduler()
         self?.observeRefreshInterval()
       }
+    }
+  }
+
+  // MARK: - Meeting alerts
+
+  /// Shows new alerts in the chosen style and withdraws the ones that no longer
+  /// apply, from both outputs: an alert raised before the style changed must
+  /// still go away.
+  private func apply(_ change: MeetingAlertChange) {
+    meetingNotifier.withdraw(change.expired)
+
+    let style = userSettings.meetingAlertStyle
+    if style == .notification {
+      change.delivered.forEach(meetingNotifier.post)
+    }
+
+    // The popup lists every alert still active, each kind in its own section;
+    // an alert leaves it only when used, dismissed or no longer applicable.
+    let content = style == .popup ? MeetingAlertContent(alerts: change.active) : nil
+    meetingAlertModel.content = content
+    menuBar.alertEventIds = content == nil ? [] : Set(change.active.map(\.eventId))
+
+    guard content != nil else {
+      menuBar.hideAlert()
+      return
+    }
+    if !change.delivered.isEmpty {
+      menuBar.presentAlert()
+    }
+  }
+
+  /// Asks for notification permission when that style is chosen, and at launch
+  /// when it already is. Asking again after a refusal is a no-op, so the
+  /// settings section points the user to System Settings instead.
+  private func observeAlertStyle() {
+    let style = withObservationTracking {
+      userSettings.meetingAlertStyle
+    } onChange: { [weak self] in
+      Task { @MainActor [weak self] in
+        self?.observeAlertStyle()
+      }
+    }
+    if style == .notification {
+      meetingNotifier.requestAuthorization()
     }
   }
 

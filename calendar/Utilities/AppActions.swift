@@ -33,13 +33,33 @@ extension Notification.Name {
     static let dismissMenuBarPanel = Notification.Name(
         "\(Constants.subsystem).dismissMenuBarPanel"
     )
+
+    /// Posted when the user dismisses the meeting alert itself — its Dismiss
+    /// button or Escape — rather than acting on one of its events.
+    static let dismissMeetingAlert = Notification.Name(
+        "\(Constants.subsystem).dismissMeetingAlert"
+    )
 }
+
+/// `userInfo` key of `.dismissMenuBarPanel`: the `compositeId` of the event
+/// the user acted on, if any. Acting on an event the meeting alert shows
+/// counts as using that alert, wherever the action came from.
+let dismissedEventIdKey = "eventId"
 
 /// Closes the menu bar panel if it is open.
 ///
 /// The panel is an ``MenuBarPanel``, not the key window, so callers must not
 /// reach for `NSApp.keyWindow` — that would close the settings window whenever
 /// the panel was not focused.
-func dismissMenuBarPanel() {
-    NotificationCenter.default.post(name: .dismissMenuBarPanel, object: nil)
+///
+/// Pass the event when the action was on one — joining it, opening it — so a
+/// meeting alert showing that event is put away too.
+func dismissMenuBarPanel(actingOn event: GoogleCalendarEvent? = nil) {
+    let userInfo = event.map { [dismissedEventIdKey: $0.compositeId] }
+    NotificationCenter.default.post(name: .dismissMenuBarPanel, object: nil, userInfo: userInfo)
+}
+
+/// Puts the meeting alert away without acting on any of its events.
+func dismissMeetingAlert() {
+    NotificationCenter.default.post(name: .dismissMeetingAlert, object: nil)
 }
