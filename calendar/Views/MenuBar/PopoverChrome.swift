@@ -24,6 +24,11 @@ struct PopoverChrome<Content: View>: View {
           // which is the closest the canvas gets to the real blend.
           blendingMode: Self.isPreview ? .withinWindow : .behindWindow
         )
+        // The material alone lets the backdrop through: a white page lifts the
+        // dark surface to mid-grey, where white labels lose their contrast (and
+        // a dark page does the same to the light one). The scrim keeps the
+        // surface on its own side of the scheme whatever sits behind it.
+        .overlay(Color(nsColor: .windowBackgroundColor).opacity(UI.PanelScrimOpacity))
       )
       .clipShape(.rect(cornerRadius: UI.PanelCornerRadius))
       .overlay {
@@ -64,6 +69,15 @@ private struct VisualEffectBackground: NSViewRepresentable {
 }
 
 #if DEBUG
+/// What ``MenuBarPreviewStage`` puts behind the panel.
+enum MenuBarPreviewBackdrop {
+  /// A gradient in the scheme's own range — the flattering case.
+  case wallpaper
+  /// A flat window in the opposite scheme — white under a dark panel, black
+  /// under a light one. The worst case for the material's contrast.
+  case contrasting
+}
+
 /// Places preview content on a stand-in desktop, so ``PopoverChrome``'s material
 /// has something to blend with and the menu bar strip gives the panel a
 /// believable anchor.
@@ -73,12 +87,13 @@ private struct VisualEffectBackground: NSViewRepresentable {
 struct MenuBarPreviewStage<Content: View>: View {
 
   var colorScheme: ColorScheme = .dark
+  var backdrop: MenuBarPreviewBackdrop = .wallpaper
   @ViewBuilder var content: Content
 
   var body: some View {
     ZStack(alignment: .top) {
       LinearGradient(
-        colors: wallpaper,
+        colors: backdrop == .wallpaper ? wallpaper : [contrasting],
         startPoint: .topLeading,
         endPoint: .bottomTrailing
       )
@@ -100,6 +115,10 @@ struct MenuBarPreviewStage<Content: View>: View {
     colorScheme == .dark
       ? [Color(red: 0.09, green: 0.12, blue: 0.28), Color(red: 0.42, green: 0.17, blue: 0.36)]
       : [Color(red: 0.60, green: 0.76, blue: 0.94), Color(red: 0.95, green: 0.86, blue: 0.74)]
+  }
+
+  private var contrasting: Color {
+    colorScheme == .dark ? .white : .black
   }
 }
 #endif
