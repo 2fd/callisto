@@ -41,6 +41,6 @@ struct EventRowBackground: View {
   private var surface: Color {
     if style.isOutOfOffice { return Color.red.opacity(0.18) }
     if style.treatment == .ongoing { return style.tint.opacity(0.14) }
-    return Color.primary.opacity(0.025)
+    return Color.primary.opacity(0.05)
   }
 }

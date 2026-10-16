@@ -76,11 +76,12 @@ struct PopoverContent: View {
 #if DEBUG
 private struct PopoverReferencePreview: View {
     let colorScheme: ColorScheme
+    var backdrop: MenuBarPreviewBackdrop = .wallpaper
 
     var body: some View {
         let fixture = EventPreviewFixture.loaded()
 
-        MenuBarPreviewStage(colorScheme: colorScheme) {
+        MenuBarPreviewStage(colorScheme: colorScheme, backdrop: backdrop) {
             PopoverContent(
                 days: fixture.days,
                 hasReadableAccounts: true,
@@ -102,5 +103,13 @@ private struct PopoverReferencePreview: View {
 
 #Preview("Popover - Light") {
     PopoverReferencePreview(colorScheme: .light)
+}
+
+#Preview("Popover - Dark over white") {
+    PopoverReferencePreview(colorScheme: .dark, backdrop: .contrasting)
+}
+
+#Preview("Popover - Light over black") {
+    PopoverReferencePreview(colorScheme: .light, backdrop: .contrasting)
 }
 #endif

@@ -80,6 +80,9 @@ enum UI {
     ///
     /// ``MenuBarPanel`` is borderless, so ``PopoverChrome`` draws this itself.
     static let PanelCornerRadius = CGFloat(16)
+    /// How much of the window background ``PopoverChrome`` lays over its
+    /// material, so the backdrop tints the panel without washing out its text.
+    static let PanelScrimOpacity = 0.6
     static let PanelHeaderHeight = CGFloat(40)
     static let PanelFooterHeight = CGFloat(32)
     static let EventCornerRadius = CGFloat(8)
