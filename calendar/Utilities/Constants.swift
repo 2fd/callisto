@@ -46,6 +46,9 @@ enum Constants {
     /// raised twice.
     static let meetingAlertRetention: TimeInterval = 24 * 60 * 60
 
+    /// What the menu bar popup plays when it raises an alert.
+    static let meetingAlertSoundURL = URL(fileURLWithPath: "/System/Library/Sounds/Glass.aiff")
+
     /// System Settings pane for one app's notifications; append the bundle id.
     static let notificationSettingsURLPrefix =
         "x-apple.systempreferences:com.apple.Notifications-Settings.extension?id="

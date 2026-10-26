@@ -263,6 +263,11 @@ The user is told when an event is about to start, in one style at a time chosen 
   heads-up re-resolves the event in progress on every tick. An alert that arrives while the
   popover is open waits for it to close. `MenuBarPanel.sendEvent` makes the panel key on the
   first click, so that click reaches the row or button under it.
+- **The popup plays a sound** (`MeetingAlertSound`, `Constants.meetingAlertSoundURL`) when an
+  alert is raised, even one waiting behind the popover. It is a system sound, not `NSSound`, so
+  it follows the alert volume and output device like a notification's, and does not blast
+  through a call in progress. Apple's sounds are referenced from `/System/Library/Sounds`, never
+  copied into the bundle.
 - **The unit tests run inside the app** (`TEST_HOST`), so `AppDelegate` skips notification
   registration and the alert scheduler under XCTest.
 
