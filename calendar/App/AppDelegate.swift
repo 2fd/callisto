@@ -215,7 +215,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
       menuBar.hideAlert()
       return
     }
+    // Sounds when the alert is raised, even if it waits behind the popover.
     if !change.delivered.isEmpty {
+      MeetingAlertSound.play()
       menuBar.presentAlert()
     }
   }
